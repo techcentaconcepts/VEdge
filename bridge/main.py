@@ -42,6 +42,13 @@ except Exception as e:
 SCRAPER_AVAILABLE = True
 logger.info("✅ Using JSON API scraper (Direct Interception)")
 
+# OddsAPI configuration for sharp bookmaker odds
+ODDS_API_KEY = os.getenv("ODDS_API_KEY", "9162d5a3703bba14dd84f046841ffa5a")
+ODDS_API_BASE = "https://api.the-odds-api.com/v4"
+
+# Cache for sharp odds (to avoid hitting API limits)
+sharp_odds_cache: Dict[str, Dict] = {}
+
 # Initialize FastAPI
 app = FastAPI(
     title="Vantedge Naija Bridge",
@@ -142,6 +149,102 @@ def get_mobile_headers() -> Dict[str, str]:
     }
 
 
+async def fetch_sharp_odds(home_team: str, away_team: str, league: str) -> Dict:
+    """
+    Fetch sharp bookmaker odds from OddsAPI (Pinnacle)
+    Returns dict with home/draw/away odds or None
+    """
+    if not ODDS_API_KEY:
+        logger.debug("OddsAPI key not configured")
+        return {"home": None, "draw": None, "away": None}
+    
+    # Check cache first (cache for 5 minutes)
+    cache_key = f"{home_team}_{away_team}".lower().replace(' ', '')
+    if cache_key in sharp_odds_cache:
+        cached_data = sharp_odds_cache[cache_key]
+        if datetime.now().timestamp() - cached_data.get('timestamp', 0) < 300:  # 5 min
+            logger.debug(f"Using cached sharp odds for {home_team} vs {away_team}")
+            return cached_data['odds']
+    
+    # Map league to OddsAPI sport key
+    sport_map = {
+        "premierleague": "soccer_epl",
+        "laliga": "soccer_spain_la_liga",
+        "seriea": "soccer_italy_serie_a",
+        "bundesliga": "soccer_germany_bundesliga",
+        "ligue1": "soccer_france_ligue_one",
+        "npfl": "soccer_epl",  # Fallback to EPL for unsupported leagues
+        "ucl": "soccer_uefa_champs_league",
+    }
+    
+    sport_key = sport_map.get(league.lower(), "soccer_epl")
+    
+    try:
+        url = f"{ODDS_API_BASE}/sports/{sport_key}/odds"
+        params = {
+            "apiKey": ODDS_API_KEY,
+            "regions": "us,uk",
+            "markets": "h2h",  # Head-to-head (1X2)
+            "oddsFormat": "decimal",
+            "bookmakers": "pinnacle"  # Only Pinnacle (sharp bookmaker)
+        }
+        
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.get(url, params=params)
+            
+            if response.status_code != 200:
+                logger.warning(f"OddsAPI returned {response.status_code}")
+                return {"home": None, "draw": None, "away": None}
+            
+            data = response.json()
+            
+            # Find matching game by team names
+            for event in data:
+                event_home = event.get('home_team', '').lower()
+                event_away = event.get('away_team', '').lower()
+                
+                # Simple fuzzy match (contains)
+                if (home_team.lower() in event_home or event_home in home_team.lower()) and \
+                   (away_team.lower() in event_away or event_away in away_team.lower()):
+                    
+                    # Extract Pinnacle odds
+                    bookmakers = event.get('bookmakers', [])
+                    for bookmaker in bookmakers:
+                        if bookmaker.get('key') == 'pinnacle':
+                            markets = bookmaker.get('markets', [])
+                            for market in markets:
+                                if market.get('key') == 'h2h':
+                                    outcomes = market.get('outcomes', [])
+                                    sharp_odds = {"home": None, "draw": None, "away": None}
+                                    
+                                    for outcome in outcomes:
+                                        name = outcome.get('name', '').lower()
+                                        price = outcome.get('price')
+                                        
+                                        if event_home in name:
+                                            sharp_odds['home'] = price
+                                        elif event_away in name:
+                                            sharp_odds['away'] = price
+                                        elif 'draw' in name:
+                                            sharp_odds['draw'] = price
+                                    
+                                    # Cache the result
+                                    sharp_odds_cache[cache_key] = {
+                                        'odds': sharp_odds,
+                                        'timestamp': datetime.now().timestamp()
+                                    }
+                                    
+                                    logger.info(f"✅ Fetched Pinnacle odds for {home_team} vs {away_team}: {sharp_odds}")
+                                    return sharp_odds
+            
+            logger.debug(f"No Pinnacle odds found for {home_team} vs {away_team}")
+            return {"home": None, "draw": None, "away": None}
+            
+    except Exception as e:
+        logger.error(f"❌ OddsAPI error: {e}")
+        return {"home": None, "draw": None, "away": None}
+
+
 def sync_to_supabase(match_data: Dict, soft_bookie: str, league: str):
     """
     Sync odds data to Supabase value_opportunities table via RPC
@@ -161,15 +264,31 @@ def sync_to_supabase(match_data: Dict, soft_bookie: str, league: str):
         # Get odds
         odds = match_data.get('odds', {})
         
+        # Fetch sharp odds from OddsAPI (async call wrapped in sync context)
+        import asyncio
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+        
+        sharp_odds = loop.run_until_complete(
+            fetch_sharp_odds(
+                match_data.get('home_team', ''),
+                match_data.get('away_team', ''),
+                league
+            )
+        )
+        
         # Call the RPC function for atomic upsert
         supabase_client.rpc("upsert_value_bet", {
             "p_match_id": match_id,
             "p_match_name": f"{match_data.get('home_team')} vs {match_data.get('away_team')}",
             "p_league": league,
             "p_kickoff": match_data.get('kickoff'),
-            "p_sharp_odds_home": 2.05,  # TODO: Fetch from Pinnacle via OddsAPI
-            "p_sharp_odds_draw": 3.40,
-            "p_sharp_odds_away": 3.60,
+            "p_sharp_odds_home": sharp_odds.get('home'),
+            "p_sharp_odds_draw": sharp_odds.get('draw'),
+            "p_sharp_odds_away": sharp_odds.get('away'),
             "p_soft_bookie": soft_bookie,
             "p_soft_odds_home": odds.get('home'),
             "p_soft_odds_draw": odds.get('draw'),
