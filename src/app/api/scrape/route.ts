@@ -3,7 +3,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { OddsScrapingService } from '@/lib/scrapers/scraping-service';
+// import { OddsScrapingService } from '@/lib/scrapers/scraping-service';
 
 export const maxDuration = 300; // 5 minutes
 export const dynamic = 'force-dynamic';
@@ -41,29 +41,41 @@ export async function POST(request: NextRequest) {
 
     console.log(`[Manual Scrape] Admin ${user.email} triggered scraping for ${sport}`);
 
-    // Run scraping
-    const service = new OddsScrapingService();
-    const result = await service.runFullScrape(sport);
-
-    // Log the activity
-    await supabase.from('admin_activity_log').insert({
-      user_id: user.id,
-      action: 'trigger_scraping',
-      details: {
-        sport,
-        result: {
-          oddsScraped: result.oddsScraped,
-          opportunitiesDetected: result.opportunitiesDetected,
-          duration: result.duration,
-        },
-      },
-    });
-
+    // TODO: Integrate with FastAPI bridge service instead of Puppeteer
+    // For now, return a placeholder response
     return NextResponse.json({
       success: true,
-      message: 'Scraping completed successfully',
-      result,
+      message: 'Scraping endpoint temporarily disabled. Please use the FastAPI bridge service.',
+      note: 'See /api/bridge/odds/[bookmaker]/[league] endpoints',
     });
+
+    // // Run scraping
+    // const service = new OddsScrapingService();
+    // const result = await service.runFullScrape(sport);
+
+    // // Run scraping
+    // const service = new OddsScrapingService();
+    // const result = await service.runFullScrape(sport);
+
+    // // Log the activity
+    // await supabase.from('admin_activity_log').insert({
+    //   user_id: user.id,
+    //   action: 'trigger_scraping',
+    //   details: {
+    //     sport,
+    //     result: {
+    //       oddsScraped: result.oddsScraped,
+    //       opportunitiesDetected: result.opportunitiesDetected,
+    //       duration: result.duration,
+    //     },
+    //   },
+    // });
+
+    // return NextResponse.json({
+    //   success: true,
+    //   message: 'Scraping completed successfully',
+    //   result,
+    // });
 
   } catch (error) {
     console.error('[Manual Scrape] Error:', error);
