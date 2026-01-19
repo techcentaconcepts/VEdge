@@ -22,9 +22,8 @@ export class Bet9jaPuppeteerScraper {
         // Use Chromium for serverless (Vercel)
         this.browser = await puppeteer.launch({
           args: chromium.args,
-          defaultViewport: chromium.defaultViewport,
           executablePath: await chromium.executablePath(),
-          headless: chromium.headless,
+          headless: true,
         });
       } else {
         // Use local Chromium for development
@@ -312,9 +311,8 @@ export class SportyBetPuppeteerScraper {
       if (isProduction) {
         this.browser = await puppeteer.launch({
           args: chromium.args,
-          defaultViewport: chromium.defaultViewport,
           executablePath: await chromium.executablePath(),
-          headless: chromium.headless,
+          headless: true,
         });
       } else {
         this.browser = await puppeteer.launch({
@@ -400,28 +398,27 @@ export class SportyBetPuppeteerScraper {
     return [];
   }
 }
-if (isProduction) {
+
+// BetKing scraper
+export class BetKingPuppeteerScraper {
+  private browser: Browser | null = null;
+  private bookmaker = 'betking';
+  private baseUrl = 'https://www.betking.com';
+
+  async init(): Promise<void> {
+    if (!this.browser) {
+      if (isProduction) {
         this.browser = await puppeteer.launch({
           args: chromium.args,
-          defaultViewport: chromium.defaultViewport,
           executablePath: await chromium.executablePath(),
-          headless: chromium.headless,
+          headless: true,
         });
       } else {
         this.browser = await puppeteer.launch({
           headless: true,
           args: ['--no-sandbox', '--disable-setuid-sandbox'],
         });
-      } browser: Browser | null = null;
-  private bookmaker = 'betking';
-  private baseUrl = 'https://www.betking.com';
-
-  async init(): Promise<void> {
-    if (!this.browser) {
-      this.browser = await puppeteer.launch({
-        headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox'],
-      });
+      }
     }
   }
 

@@ -1,11 +1,45 @@
-# Admin Dashboard Component for Manual Scraping Control
-
 'use client';
 
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { RefreshCw, Play, CheckCircle, XCircle, Clock, TrendingUp } from 'lucide-react';
+
+// Simple Button component
+const Button = ({ children, onClick, disabled, variant, className }: any) => (
+  <button
+    onClick={onClick}
+    disabled={disabled}
+    className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+      variant === 'outline'
+        ? 'border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800'
+        : 'bg-green-500 text-white hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed'
+    } ${className || ''}`}
+  >
+    {children}
+  </button>
+);
+
+// Simple Card components
+const Card = ({ children, className }: any) => (
+  <div className={`bg-white dark:bg-neutral-900 rounded-xl shadow-sm border border-neutral-200 dark:border-neutral-800 ${className || ''}`}>
+    {children}
+  </div>
+);
+
+const CardHeader = ({ children }: any) => (
+  <div className="p-6 border-b border-neutral-200 dark:border-neutral-800">{children}</div>
+);
+
+const CardTitle = ({ children }: any) => (
+  <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">{children}</h3>
+);
+
+const CardDescription = ({ children }: any) => (
+  <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-1">{children}</p>
+);
+
+const CardContent = ({ children, className }: any) => (
+  <div className={`p-6 ${className || ''}`}>{children}</div>
+);
 
 interface ScrapingResult {
   success: boolean;

@@ -36,16 +36,42 @@ export function StatsCards() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data, error } = await supabase
-        .rpc('calculate_user_stats', { p_user_id: user.id });
+      console.log('Calling calculate_user_stats for user:', user.id);
 
-      if (error) throw error;
+      const { data, error } = await supabase
+        .rpc('calculate_user_stats', { p_user_id: user.id })
+        .single();
+
+      console.log('RPC Response:', { data, error });
+
+      if (error) {
+        console.error('RPC Error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
+        throw error;
+      }
       
-      // The function returns JSON, parse it if it's a string
-      const statsData = typeof data === 'string' ? JSON.parse(data) : data;
-      setStats(statsData as UserStats);
+      console.log('Stats data:', data);
+      setStats(data as UserStats);
     } catch (error) {
       console.error('Error fetching stats:', error);
+      // Set default stats if error occurs
+      setStats({
+        total_bets: 0,
+        total_staked: 0,
+        total_profit: 0,
+        roi: 0,
+        win_rate: 0,
+        avg_clv: 0,
+        avg_odds: 0,
+        pending_count: 0,
+        won_count: 0,
+        lost_count: 0,
+        last_bet_date: null
+      });
     } finally {
       setLoading(false);
     }

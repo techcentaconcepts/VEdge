@@ -17,6 +17,7 @@
     "db:reset": "supabase db reset"
   },
   "dependencies": {
+    "@sparticuz/chromium": "^143.0.4",
     "@supabase/ssr": "^0.1.0",
     "@supabase/supabase-js": "^2.39.0",
     "clsx": "^2.1.0",
