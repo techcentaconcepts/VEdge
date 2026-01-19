@@ -5,7 +5,7 @@ Scrapes Nigerian bookmakers using NaijaBet-Api library
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional
 import os
 import logging
@@ -15,6 +15,42 @@ import random
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+def parse_kickoff(kickoff_val: Any) -> Optional[str]:
+    """Parses kickoff time to ISO 8601 string or returns None."""
+    if kickoff_val is None:
+        return None
+        
+    try:
+        # If it's a string
+        if isinstance(kickoff_val, str):
+            kickoff_val = kickoff_val.strip()
+            if not kickoff_val:
+                return None
+            
+            # If string contains digits only, treat as timestamp
+            if kickoff_val.isdigit():
+                ts = int(kickoff_val)
+                # Assume milliseconds if > 10 billion (approx 1970 + 300 years in seconds, so safe bet)
+                if ts > 10_000_000_000:
+                    return datetime.fromtimestamp(ts / 1000, timezone.utc).isoformat()
+                return datetime.fromtimestamp(ts, timezone.utc).isoformat()
+            
+            # If it's a string, return as is (valid for ISO strings)
+            return kickoff_val
+            
+        # If it's a number
+        if isinstance(kickoff_val, (int, float)):
+             # Assume milliseconds if > 10 billion
+            if kickoff_val > 10_000_000_000:
+                return datetime.fromtimestamp(kickoff_val / 1000, timezone.utc).isoformat()
+            return datetime.fromtimestamp(kickoff_val, timezone.utc).isoformat()
+            
+    except Exception as e:
+        logger.warning(f"Failed to parse kickoff '{kickoff_val}': {e}")
+        return None
+        
+    return None
 
 # Initialize Supabase client
 try:
@@ -270,11 +306,14 @@ async def sync_to_supabase(match_data: Dict, soft_bookie: str, league: str):
         )
         
         # Call the RPC function for atomic upsert
+        # Ensure kickoff is valid timestamp or None
+        kickoff_val = parse_kickoff(match_data.get('kickoff'))
+
         supabase_client.rpc("upsert_value_bet", {
             "p_match_id": match_id,
             "p_match_name": f"{match_data.get('home_team')} vs {match_data.get('away_team')}",
             "p_league": league,
-            "p_kickoff": match_data.get('kickoff'),
+            "p_kickoff": kickoff_val,
             "p_sharp_odds_home": sharp_odds.get('home'),
             "p_sharp_odds_draw": sharp_odds.get('draw'),
             "p_sharp_odds_away": sharp_odds.get('away'),
