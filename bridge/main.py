@@ -389,7 +389,9 @@ async def scrape_sportybet_json(league: str) -> List[Dict]:
                             
                             if match["home_team"] and match["odds"].get("home"):
                                 matches.append(match)
-                            await sync_to_supabase(match, "SportyBet", league)
+                                await sync_to_supabase(match, "SportyBet", league)
+                            
+                        except Exception as e:
                             continue
 
             logger.info(f"✅ SportyBet: Found {len(matches)} matches for {league}")
@@ -487,7 +489,6 @@ async def scrape_bet9ja_json(league: str) -> List[Dict]:
                 logger.info(f"✅ Bet9ja V2 scrape found {len(matches)} matches")
                 return matches
 
-                return await scrape_bet9ja_simple(league)
             else:
                 logger.warning(f"Bet9ja API returned {response.status_code}")
                 return await scrape_bet9ja_simple(league)
