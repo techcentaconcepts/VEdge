@@ -14,22 +14,45 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Import NaijaBet-Api
+# Import NaijaBet-Api with multiple fallback patterns
+NAIJABET_AVAILABLE = False
+Bet9ja = None
+BetKing = None
+SportyBet = None
+Betid = None
+
 try:
-    # Version 0.2.17 uses different import structure
-    from NaijaBet_Api import Bet9ja, BetKing, SportyBet
-    # Try importing Betid for league constants
+    # Try pattern 1: Direct import
+    import NaijaBet_Api
+    logger.info(f"NaijaBet_Api imported, checking available modules: {dir(NaijaBet_Api)}")
+    
+    # Try to find the correct classes
+    if hasattr(NaijaBet_Api, 'Bet9ja'):
+        Bet9ja = NaijaBet_Api.Bet9ja
+        BetKing = getattr(NaijaBet_Api, 'BetKing', None)
+        SportyBet = getattr(NaijaBet_Api, 'SportyBet', None)
+    elif hasattr(NaijaBet_Api, 'bookmakers'):
+        from NaijaBet_Api.bookmakers import *
+        logger.info(f"Bookmakers module available")
+    
+    # Try importing Betid
     try:
         from NaijaBet_Api.id import Betid
     except:
-        # Fallback if Betid doesn't exist in this version
-        Betid = None
+        try:
+            from NaijaBet_Api import Betid
+        except:
+            logger.warning("Betid not found, will use league names directly")
+    
     NAIJABET_AVAILABLE = True
     logger.info("✅ NaijaBet-Api loaded successfully")
 except ImportError as e:
     NAIJABET_AVAILABLE = False
     logger.warning(f"⚠️  NaijaBet-Api not available: {e}")
     logger.warning("Run: pip install NaijaBet-Api && playwright install")
+except Exception as e:
+    logger.error(f"❌ Error loading NaijaBet-Api: {e}")
+    NAIJABET_AVAILABLE = False
 
 # Initialize FastAPI
 app = FastAPI(
