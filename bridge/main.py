@@ -9,16 +9,16 @@ from datetime import datetime
 from typing import List, Dict, Any, Optional
 import os
 import logging
-import aiohttp
-from bs4 import BeautifulSoup
+import httpx
+import random
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Simple HTTP scraper - fallback when NaijaBet-Api doesn't work
+# JSON API scraper - The "Career" Method
 SCRAPER_AVAILABLE = True
-logger.info("✅ Using HTTP-based scraper")
+logger.info("✅ Using JSON API scraper (Direct Interception)")
 
 # Initialize FastAPI
 app = FastAPI(
@@ -179,8 +179,8 @@ async def get_bet9ja_odds(league: str):
         
         logger.info(f"🟢 Scraping Bet9ja: {league}")
         
-        # Use simple HTTP scraper
-        data = await scrape_bet9ja_simple(league)
+        # Use JSON API scraper
+        data = await scrape_bet9ja_json(league)
         
         logger.info(f"✅ Bet9ja scrape complete: {len(data)} matches")
         
@@ -225,8 +225,8 @@ async def get_betking_odds(league: str):
         
         logger.info(f"🟠 Scraping BetKing: {league}")
         
-        # Use same demo data
-        data = await scrape_bet9ja_simple(league)
+        # Use JSON scraper
+        data = await scrape_betking_json(league)
         
         logger.info(f"✅ BetKing scrape complete: {len(data)} matche
 
@@ -262,8 +262,8 @@ async def get_sportybet_odds(league: str):
         
         logger.info(f"🔵 Scraping SportyBet: {league}")
         
-        # Use same demo data
-        data = await scrape_bet9ja_simple(league)
+        # Use JSON API scraper
+        data = await scrape_sportybet_json(league)
         
         logger.info(f"✅ SportyBet scrape complete: {len(data)} matche
         raise HTTPException(status_code=500, detail=f"SportyBet scraping failed: {str(e)}")
