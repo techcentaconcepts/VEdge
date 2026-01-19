@@ -23,7 +23,11 @@ try:
     SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     
     if SUPABASE_URL and SUPABASE_KEY:
-        supabase_client: Optional[Client] = create_client(SUPABASE_URL, SUPABASE_KEY)
+        # Create client with minimal options to avoid compatibility issues
+        supabase_client: Optional[Client] = create_client(
+            supabase_url=SUPABASE_URL,
+            supabase_key=SUPABASE_KEY
+        )
         logger.info("✅ Supabase client initialized")
     else:
         supabase_client = None
@@ -31,6 +35,8 @@ try:
 except Exception as e:
     supabase_client = None
     logger.warning(f"⚠️ Supabase initialization failed: {e}")
+    import traceback
+    logger.error(traceback.format_exc())
 
 # JSON API scraper - The "Career" Method
 SCRAPER_AVAILABLE = True
