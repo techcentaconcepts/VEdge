@@ -482,6 +482,7 @@ async def scrape_bet9ja_json(league: str) -> List[Dict]:
     """
     Scrape Bet9ja using the PalimpsestAjax API (More reliable than PalazzoRest)
     """
+    start_time = datetime.now()
     # FIXED: Switched to PalimpsestAjax endpoint
     url = "https://sports.bet9ja.com/desktop/feapi/PalimpsestAjax/GetEventsInGroupV2"
     
