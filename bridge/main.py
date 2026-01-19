@@ -52,6 +52,33 @@ def parse_kickoff(kickoff_val: Any) -> Optional[str]:
         
     return None
 
+async def log_scraper_health(
+    bookmaker: str, 
+    status: str, 
+    latitude_ms: int = 0, 
+    records_count: int = 0, 
+    error_count: int = 0,
+    error_msg: str = None
+):
+    """Log scraper health status to Supabase"""
+    if not supabase_client: return
+
+    try:
+        data = {
+            "bookmaker": bookmaker,
+            "scraper_type": "python-bridge",
+            "status": status,
+            "latency_ms": latitude_ms,
+            "records_scraped": records_count,
+            "error_count": error_count,
+            "error_message": error_msg,
+            "last_successful_scrape": datetime.now(timezone.utc).isoformat() if status == "healthy" else None
+        }
+        
+        supabase_client.from_("scraper_health").insert(data).execute()
+    except Exception as e:
+        logger.error(f"Failed to log health for {bookmaker}: {e}")
+
 # Initialize Supabase client
 try:
     from supabase import create_client, Client
@@ -357,11 +384,18 @@ async def scrape_sportybet_json(league: str) -> List[Dict]:
         "sportId": "sr:sport:1",
     }
 
+    # Start timer
+    start_time = datetime.now()
+    
     try:
         async with httpx.AsyncClient(http2=True, timeout=30.0) as client:
-            response = await client.get(url, headers=headers, params=params)
-            response.raise_for_status()
-            
+            try:
+                response = await client.get(url, headers=headers, params=params)
+                response.raise_for_status()
+            except Exception as http_err:
+                 await log_scraper_health("sportybet", "down", 0, 0, 1, str(http_err))
+                 raise http_err
+
             json_resp = response.json()
             # Standard SportyBet response wrapper: { bizCode: 10000, data: [...] }
             data = json_resp.get("data", [])
@@ -433,10 +467,13 @@ async def scrape_sportybet_json(league: str) -> List[Dict]:
                         except Exception as e:
                             continue
 
+            elapsed = int((datetime.now() - start_time).total_seconds() * 1000)
+            await log_scraper_health("sportybet", "healthy", elapsed, len(matches), 0)
             logger.info(f"✅ SportyBet: Found {len(matches)} matches for {league}")
             return matches
             
     except Exception as e:
+        await log_scraper_health("sportybet", "down", 0, 0, 1, str(e))
         logger.error(f"❌ SportyBet JSON error: {e}")
         return []
 
@@ -525,14 +562,18 @@ async def scrape_bet9ja_json(league: str) -> List[Dict]:
                         matches.append(match)
                         await sync_to_supabase(match, "Bet9ja", league)
 
+                elapsed = int((datetime.now() - start_time).total_seconds() * 1000)
+                await log_scraper_health("bet9ja", "healthy", elapsed, len(matches), 0)
                 logger.info(f"✅ Bet9ja V2 scrape found {len(matches)} matches")
                 return matches
 
             else:
+                await log_scraper_health("bet9ja", "degraded", 0, 0, 1, f"HTTP {response.status_code}")
                 logger.warning(f"Bet9ja API returned {response.status_code}")
                 return await scrape_bet9ja_simple(league)
                 
     except Exception as e:
+        await log_scraper_health("bet9ja", "degraded", 0, 0, 1, str(e))
         logger.error(f"❌ Bet9ja JSON error: {e}")
         return await scrape_bet9ja_simple(league)
 
