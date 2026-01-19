@@ -1,53 +1,80 @@
 # Vantedge Browser Extension
 
-Chrome/Edge extension for automatic bet tracking on Nigerian sportsbooks.
-
-## Supported Bookmakers
-
-- **Bet9ja** (bet9ja.com)
-- **SportyBet** (sportybet.com)
-- **BetKing** (betking.com)
+Chrome/Edge extension for automatic bet tracking from Nigerian bookmakers.
 
 ## Features
 
-- **Auto-sync bets**: Automatically captures placed bets
-- **Bet history import**: Syncs historical bets from My Bets pages
-- **Value opportunities**: Shows live value bets in popup
-- **Quick stats**: View profit/loss at a glance
+- 🎯 **Automatic Bet Detection**: Scrapes bets from Bet9ja, SportyBet, BetKing
+- 🔄 **Real-time Sync**: Syncs bets to your Vantedge dashboard
+- 📊 **Bet History**: Extracts historical bets from your betting account
+- 🔐 **Secure Auth**: Uses Supabase authentication
 
-## Development Setup
+## Quick Setup
 
-### Prerequisites
+### 1. Configure API Credentials
 
-- Node.js 18+
-- Chrome or Edge browser
+Edit `config.js` and update with your values from `.env.local`:
 
-### Loading the Extension
+```javascript
+SUPABASE_URL: 'https://YOUR_PROJECT_ID.supabase.co'
+SUPABASE_ANON_KEY: 'your-anon-key-here'
+API_URL: 'http://localhost:3000/api' // or production URL
+```
 
-1. Open Chrome/Edge and go to `chrome://extensions` or `edge://extensions`
-2. Enable "Developer mode" (toggle in top right)
-3. Click "Load unpacked"
-4. Select this `extension` folder
+### 2. Load Extension in Chrome
 
-### Testing
+1. Open Chrome and go to `chrome://extensions/`
+2. Enable **Developer mode** (toggle in top right)
+3. Click **Load unpacked**
+4. Select the `extension` folder
+5. The Vantedge icon should appear in your toolbar
 
-1. After loading, visit a supported bookmaker site
-2. Place a bet or visit the bet history page
-3. Open the extension popup to verify sync
+### 3. Login & Sync
+
+1. Click the Vantedge extension icon
+2. Enter your Vantedge account credentials
+3. The extension will start syncing your bets automatically
+
+## Supported Bookmakers
+
+### Phase 1 (Current)
+- ✅ **Bet9ja** - Full support
+
+### Phase 2 (Planned)
+- ⏳ **SportyBet**
+- ⏳ **BetKing**
 
 ## File Structure
 
 ```
 extension/
 ├── manifest.json           # Extension manifest (v3)
-├── background.js           # Service worker
-├── content-scripts/
-│   ├── bet9ja.js           # Bet9ja scraper
-│   ├── sportybet.js        # SportyBet scraper
-│   └── betking.js          # BetKing scraper
-├── popup/
-│   ├── popup.html          # Popup UI
-│   └── popup.js            # Popup logic
+├── config.js              # Configuration (UPDATE THIS)
+├── background.js          # Service worker (auth & sync)
+├── content-scripts/       # Page scrapers
+│   ├── bet9ja.js         # Bet9ja scraper
+│   ├── sportybet.js      # SportyBet scraper
+│   └── betking.js        # BetKing scraper
+├── popup/                 # Extension popup UI
+│   ├── popup.html
+│   └── popup.js
+└── icons/                # Extension icons
+```
+
+## Development
+
+### Testing Locally
+
+1. Start Vantedge dev server: `npm run dev`
+2. Load extension (see step 2 above)
+3. Navigate to Bet9ja and place a test bet
+4. Check extension console (right-click icon → Inspect service worker)
+
+### Debugging
+
+- **Content Script**: Open DevTools on bookmaker page
+- **Background Worker**: Right-click extension icon → Inspect
+- **Popup**: Right-click extension icon → Inspect popup
 ├── options/
 │   ├── options.html        # Settings page
 │   └── options.js          # Settings logic

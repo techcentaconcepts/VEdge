@@ -48,7 +48,7 @@ export default function SettingsPage() {
 
       // Initialize edited state
       const edited: Record<string, any> = {};
-      data?.forEach(s => {
+      data?.forEach((s: SiteSetting) => {
         edited[s.key] = s.value;
       });
       setEditedSettings(edited);

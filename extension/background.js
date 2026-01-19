@@ -1,7 +1,8 @@
 // Vantedge Background Service Worker
 // Handles auth state, bet syncing, and communication with content scripts
 
-const VANTEDGE_API = 'https://vantedge.io/api';
+// Load configuration
+importScripts('config.js');
 
 // State
 let authToken = null;
@@ -12,19 +13,23 @@ let syncQueue = [];
 chrome.runtime.onInstalled.addListener(async (details) => {
   console.log('[Vantedge] Extension installed:', details.reason);
   
-  // Set default settings
+  // Set default settings with values from config
   await chrome.storage.local.set({
     settings: {
-      autoSync: true,
-      showOverlay: true,
-      syncInterval: 30, // seconds
+      autoSync: CONFIG.AUTO_SYNC,
+      showOverlay: CONFIG.SHOW_OVERLAY,
+      syncInterval: CONFIG.SYNC_INTERVAL_MINUTES * 60, // convert to seconds
     },
     syncQueue: [],
     lastSync: null,
+    // API configuration from config.js
+    apiUrl: CONFIG.API_URL,
+    supabaseUrl: CONFIG.SUPABASE_URL,
+    supabaseAnonKey: CONFIG.SUPABASE_ANON_KEY,
   });
   
   // Set up sync alarm
-  chrome.alarms.create('syncBets', { periodInMinutes: 1 });
+  chrome.alarms.create('syncBets', { periodInMinutes: CONFIG.SYNC_INTERVAL_MINUTES });
 });
 
 // Listen for alarms
@@ -80,14 +85,25 @@ async function handleMessage(message, sender) {
 // Authentication
 async function handleLogin({ email, password }) {
   try {
-    const response = await fetch(`${VANTEDGE_API}/auth/login`, {
+    // Load Supabase config
+    const config = await chrome.storage.local.get(['supabaseUrl', 'supabaseAnonKey']);
+    if (!config.supabaseUrl || !config.supabaseAnonKey) {
+      throw new Error('Supabase config not set. Please update extension settings.');
+    }
+    
+    // Sign in with Supabase
+    const response = await fetch(`${config.supabaseUrl}/auth/v1/token?grant_type=password`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': config.supabaseAnonKey,
+      },
       body: JSON.stringify({ email, password }),
     });
     
     if (!response.ok) {
-      throw new Error('Invalid credentials');
+      const error = await response.json();
+      throw new Error(error.error_description || 'Invalid credentials');
     }
     
     const data = await response.json();
@@ -98,6 +114,7 @@ async function handleLogin({ email, password }) {
       authToken, 
       userId,
       userEmail: email,
+      refreshToken: data.refresh_token,
     });
     
     return { success: true, user: data.user };
@@ -170,7 +187,10 @@ async function processSyncQueue() {
   }
   
   try {
-    const response = await fetch(`${VANTEDGE_API}/bets/sync`, {
+    // Get API URL from config
+    const { apiUrl = 'http://localhost:3000/api' } = await chrome.storage.local.get('apiUrl');
+    
+    const response = await fetch(`${apiUrl}/bets/sync`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -180,13 +200,18 @@ async function processSyncQueue() {
     });
     
     if (!response.ok) {
-      throw new Error('Sync failed');
+      const error = await response.json();
+      throw new Error(error.error || 'Sync failed');
     }
     
     const result = await response.json();
     
-    // Mark synced bets
-    const syncedIds = new Set(result.synced_ids);
+    // Mark synced bets - response includes created and updated arrays
+    const syncedIds = new Set([
+      ...(result.created || []).map(b => b.external_bet_id),
+      ...(result.updated || []).map(b => b.external_bet_id),
+    ]);
+    
     const updatedQueue = syncQueue.map(bet => 
       syncedIds.has(bet.external_bet_id) ? { ...bet, synced: true } : bet
     );
@@ -200,8 +225,8 @@ async function processSyncQueue() {
       lastSync: new Date().toISOString(),
     });
     
-    console.log(`[Vantedge] Synced ${result.synced_ids.length} bets`);
-    return { success: true, synced: result.synced_ids.length };
+    console.log(`[Vantedge] Synced ${syncedIds.size} bets (${result.created?.length || 0} created, ${result.updated?.length || 0} updated)`);
+    return { success: true, synced: syncedIds.size, created: result.created?.length, updated: result.updated?.length };
   } catch (error) {
     console.error('[Vantedge] Sync error:', error);
     return { success: false, error: error.message };

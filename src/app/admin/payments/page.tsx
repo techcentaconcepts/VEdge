@@ -21,8 +21,10 @@ interface PaymentGateway {
   is_test_mode: boolean;
   credentials: {
     public_key?: string;
+    publishable_key?: string;
     secret_key?: string;
     webhook_secret?: string;
+    encryption_key?: string;
   };
   supported_currencies: string[];
   priority: number;
@@ -72,7 +74,7 @@ export default function PaymentGatewaysPage() {
       
       // Initialize edited state
       const edited: Record<string, PaymentGateway> = {};
-      data?.forEach(g => { edited[g.id] = { ...g }; });
+      data?.forEach((g: PaymentGateway) => { edited[g.id] = { ...g }; });
       setEditedGateways(edited);
     } catch (error) {
       console.error('Failed to load gateways:', error);
@@ -89,6 +91,7 @@ export default function PaymentGatewaysPage() {
         p_is_enabled: gateway.is_enabled,
         p_is_test_mode: gateway.is_test_mode,
         p_credentials: gateway.credentials,
+        p_priority: gateway.priority,
       });
 
       if (error) throw error;
@@ -206,65 +209,227 @@ export default function PaymentGatewaysPage() {
 
               {/* Credentials */}
               <div className="p-6 space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Public Key */}
-                  <div>
-                    <label className="block text-sm font-medium text-neutral-300 mb-2">
-                      Public Key
-                    </label>
-                    <input
-                      type="text"
-                      value={edited.credentials.public_key || ''}
-                      onChange={(e) => updateCredential(gateway.id, 'public_key', e.target.value)}
-                      placeholder={`pk_${edited.is_test_mode ? 'test' : 'live'}_...`}
-                      className="w-full px-4 py-2.5 bg-neutral-800 border border-neutral-700 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-500"
-                    />
-                  </div>
+                {/* Stripe Credentials */}
+                {gateway.provider === 'stripe' && (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Publishable Key */}
+                      <div>
+                        <label className="block text-sm font-medium text-neutral-300 mb-2">
+                          Publishable Key
+                        </label>
+                        <input
+                          type="text"
+                          value={edited.credentials.publishable_key || ''}
+                          onChange={(e) => updateCredential(gateway.id, 'publishable_key', e.target.value)}
+                          placeholder={`pk_${edited.is_test_mode ? 'test' : 'live'}_...`}
+                          className="w-full px-4 py-2.5 bg-neutral-800 border border-neutral-700 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-500"
+                        />
+                      </div>
 
-                  {/* Secret Key */}
-                  <div>
-                    <label className="block text-sm font-medium text-neutral-300 mb-2">
-                      Secret Key
-                    </label>
-                    <div className="relative">
+                      {/* Secret Key */}
+                      <div>
+                        <label className="block text-sm font-medium text-neutral-300 mb-2">
+                          Secret Key
+                        </label>
+                        <div className="relative">
+                          <input
+                            type={showSecrets[gateway.id] ? 'text' : 'password'}
+                            value={edited.credentials.secret_key || ''}
+                            onChange={(e) => updateCredential(gateway.id, 'secret_key', e.target.value)}
+                            placeholder={`sk_${edited.is_test_mode ? 'test' : 'live'}_...`}
+                            className="w-full px-4 py-2.5 bg-neutral-800 border border-neutral-700 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-500 pr-10"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowSecrets(prev => ({ ...prev, [gateway.id]: !prev[gateway.id] }))}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-white"
+                          >
+                            {showSecrets[gateway.id] ? (
+                              <EyeOff className="w-4 h-4" />
+                            ) : (
+                              <Eye className="w-4 h-4" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Webhook Secret */}
+                    <div>
+                      <label className="block text-sm font-medium text-neutral-300 mb-2">
+                        Webhook Secret
+                      </label>
                       <input
                         type={showSecrets[gateway.id] ? 'text' : 'password'}
-                        value={edited.credentials.secret_key || ''}
-                        onChange={(e) => updateCredential(gateway.id, 'secret_key', e.target.value)}
-                        placeholder={`sk_${edited.is_test_mode ? 'test' : 'live'}_...`}
-                        className="w-full px-4 py-2.5 bg-neutral-800 border border-neutral-700 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-500 pr-10"
+                        value={edited.credentials.webhook_secret || ''}
+                        onChange={(e) => updateCredential(gateway.id, 'webhook_secret', e.target.value)}
+                        placeholder="whsec_..."
+                        className="w-full px-4 py-2.5 bg-neutral-800 border border-neutral-700 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-500"
                       />
-                      <button
-                        type="button"
-                        onClick={() => setShowSecrets(prev => ({ ...prev, [gateway.id]: !prev[gateway.id] }))}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-white"
-                      >
-                        {showSecrets[gateway.id] ? (
-                          <EyeOff className="w-4 h-4" />
-                        ) : (
-                          <Eye className="w-4 h-4" />
-                        )}
-                      </button>
+                      <p className="text-xs text-neutral-500 mt-1">
+                        Webhook URL: {typeof window !== 'undefined' ? window.location.origin : ''}/api/webhooks/{gateway.provider}
+                      </p>
                     </div>
-                  </div>
-                </div>
+                  </>
+                )}
 
-                {/* Webhook Secret */}
-                <div>
-                  <label className="block text-sm font-medium text-neutral-300 mb-2">
-                    Webhook Secret
-                  </label>
-                  <input
-                    type={showSecrets[gateway.id] ? 'text' : 'password'}
-                    value={edited.credentials.webhook_secret || ''}
-                    onChange={(e) => updateCredential(gateway.id, 'webhook_secret', e.target.value)}
-                    placeholder="whsec_..."
-                    className="w-full px-4 py-2.5 bg-neutral-800 border border-neutral-700 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-500"
-                  />
-                  <p className="text-xs text-neutral-500 mt-1">
-                    Webhook URL: {typeof window !== 'undefined' ? window.location.origin : ''}/api/webhooks/{gateway.provider}
-                  </p>
-                </div>
+                {/* Paystack Credentials */}
+                {gateway.provider === 'paystack' && (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Public Key */}
+                      <div>
+                        <label className="block text-sm font-medium text-neutral-300 mb-2">
+                          Public Key
+                        </label>
+                        <input
+                          type="text"
+                          value={edited.credentials.public_key || ''}
+                          onChange={(e) => updateCredential(gateway.id, 'public_key', e.target.value)}
+                          placeholder={`pk_${edited.is_test_mode ? 'test' : 'live'}_...`}
+                          className="w-full px-4 py-2.5 bg-neutral-800 border border-neutral-700 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-500"
+                        />
+                      </div>
+
+                      {/* Secret Key */}
+                      <div>
+                        <label className="block text-sm font-medium text-neutral-300 mb-2">
+                          Secret Key
+                        </label>
+                        <div className="relative">
+                          <input
+                            type={showSecrets[gateway.id] ? 'text' : 'password'}
+                            value={edited.credentials.secret_key || ''}
+                            onChange={(e) => updateCredential(gateway.id, 'secret_key', e.target.value)}
+                            placeholder={`sk_${edited.is_test_mode ? 'test' : 'live'}_...`}
+                            className="w-full px-4 py-2.5 bg-neutral-800 border border-neutral-700 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-500 pr-10"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowSecrets(prev => ({ ...prev, [gateway.id]: !prev[gateway.id] }))}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-white"
+                          >
+                            {showSecrets[gateway.id] ? (
+                              <EyeOff className="w-4 h-4" />
+                            ) : (
+                              <Eye className="w-4 h-4" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Webhook Secret */}
+                    <div>
+                      <label className="block text-sm font-medium text-neutral-300 mb-2">
+                        Webhook Secret Hash
+                      </label>
+                      <input
+                        type={showSecrets[gateway.id] ? 'text' : 'password'}
+                        value={edited.credentials.webhook_secret || ''}
+                        onChange={(e) => updateCredential(gateway.id, 'webhook_secret', e.target.value)}
+                        placeholder="Webhook secret hash..."
+                        className="w-full px-4 py-2.5 bg-neutral-800 border border-neutral-700 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-500"
+                      />
+                      <p className="text-xs text-neutral-500 mt-1">
+                        Webhook URL: {typeof window !== 'undefined' ? window.location.origin : ''}/api/webhooks/{gateway.provider}
+                      </p>
+                    </div>
+                  </>
+                )}
+
+                {/* Flutterwave Credentials */}
+                {gateway.provider === 'flutterwave' && (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Public Key */}
+                      <div>
+                        <label className="block text-sm font-medium text-neutral-300 mb-2">
+                          Public Key
+                        </label>
+                        <input
+                          type="text"
+                          value={edited.credentials.public_key || ''}
+                          onChange={(e) => updateCredential(gateway.id, 'public_key', e.target.value)}
+                          placeholder="FLWPUBK-..."
+                          className="w-full px-4 py-2.5 bg-neutral-800 border border-neutral-700 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-500"
+                        />
+                      </div>
+
+                      {/* Secret Key */}
+                      <div>
+                        <label className="block text-sm font-medium text-neutral-300 mb-2">
+                          Secret Key
+                        </label>
+                        <div className="relative">
+                          <input
+                            type={showSecrets[gateway.id] ? 'text' : 'password'}
+                            value={edited.credentials.secret_key || ''}
+                            onChange={(e) => updateCredential(gateway.id, 'secret_key', e.target.value)}
+                            placeholder="FLWSECK-..."
+                            className="w-full px-4 py-2.5 bg-neutral-800 border border-neutral-700 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-500 pr-10"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowSecrets(prev => ({ ...prev, [gateway.id]: !prev[gateway.id] }))}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-white"
+                          >
+                            {showSecrets[gateway.id] ? (
+                              <EyeOff className="w-4 h-4" />
+                            ) : (
+                              <Eye className="w-4 h-4" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Encryption Key */}
+                      <div>
+                        <label className="block text-sm font-medium text-neutral-300 mb-2">
+                          Encryption Key
+                        </label>
+                        <div className="relative">
+                          <input
+                            type={showSecrets[gateway.id] ? 'text' : 'password'}
+                            value={edited.credentials.encryption_key || ''}
+                            onChange={(e) => updateCredential(gateway.id, 'encryption_key', e.target.value)}
+                            placeholder="FLWSECK_TEST-..."
+                            className="w-full px-4 py-2.5 bg-neutral-800 border border-neutral-700 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-500 pr-10"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowSecrets(prev => ({ ...prev, [gateway.id]: !prev[gateway.id] }))}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-white"
+                          >
+                            {showSecrets[gateway.id] ? (
+                              <EyeOff className="w-4 h-4" />
+                            ) : (
+                              <Eye className="w-4 h-4" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Webhook Secret */}
+                    <div>
+                      <label className="block text-sm font-medium text-neutral-300 mb-2">
+                        Webhook Secret Hash
+                      </label>
+                      <input
+                        type={showSecrets[gateway.id] ? 'text' : 'password'}
+                        value={edited.credentials.webhook_secret || ''}
+                        onChange={(e) => updateCredential(gateway.id, 'webhook_secret', e.target.value)}
+                        placeholder="Webhook secret hash..."
+                        className="w-full px-4 py-2.5 bg-neutral-800 border border-neutral-700 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-500"
+                      />
+                      <p className="text-xs text-neutral-500 mt-1">
+                        Webhook URL: {typeof window !== 'undefined' ? window.location.origin : ''}/api/webhooks/{gateway.provider}
+                      </p>
+                    </div>
+                  </>
+                )}
 
                 {/* Priority */}
                 <div>
