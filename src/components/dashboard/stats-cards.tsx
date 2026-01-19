@@ -78,7 +78,7 @@ export function StatsCards() {
   };
 
   const formatCurrency = (amount: number) => {
-    return `₦${amount.toLocaleString('en-NG', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+    return `₦ ${amount.toLocaleString('en-NG', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
   };
 
   const formatPercent = (value: number) => {

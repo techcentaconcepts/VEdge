@@ -106,11 +106,11 @@ export default function SettingsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-3">
+          <h1 className="text-2xl font-bold text-neutral-900 dark:text-white flex items-center gap-3">
             <Settings className="w-7 h-7 text-emerald-500" />
             Site Settings
           </h1>
-          <p className="text-neutral-400 mt-1">
+          <p className="text-neutral-600 dark:text-neutral-400 mt-1">
             Configure global site settings and preferences
           </p>
         </div>
@@ -120,7 +120,7 @@ export default function SettingsPage() {
           className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
             hasChanges
               ? 'bg-emerald-500 text-white hover:bg-emerald-600'
-              : 'bg-neutral-700 text-neutral-400 cursor-not-allowed'
+              : 'bg-neutral-200 dark:bg-neutral-700 text-neutral-400 dark:text-neutral-400 cursor-not-allowed'
           }`}
         >
           {saving ? (
@@ -141,24 +141,24 @@ export default function SettingsPage() {
       {message && (
         <div className={`p-4 rounded-lg flex items-center gap-3 ${
           message.type === 'success' 
-            ? 'bg-emerald-500/10 border border-emerald-500/20' 
-            : 'bg-red-500/10 border border-red-500/20'
+            ? 'bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20' 
+            : 'bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20'
         }`}>
           {message.type === 'success' ? (
-            <Check className="w-5 h-5 text-emerald-500" />
+            <Check className="w-5 h-5 text-emerald-600 dark:text-emerald-500" />
           ) : (
-            <AlertTriangle className="w-5 h-5 text-red-500" />
+            <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-500" />
           )}
-          <p className={message.type === 'success' ? 'text-emerald-200' : 'text-red-200'}>
+          <p className={message.type === 'success' ? 'text-emerald-800 dark:text-emerald-200' : 'text-red-800 dark:text-red-200'}>
             {message.text}
           </p>
         </div>
       )}
 
       {/* General Settings */}
-      <div className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden">
-        <div className="p-6 border-b border-neutral-800">
-          <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+      <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl overflow-hidden">
+        <div className="p-6 border-b border-neutral-200 dark:border-neutral-800">
+          <h2 className="text-lg font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
             <Globe className="w-5 h-5 text-blue-500" />
             General
           </h2>
@@ -167,7 +167,7 @@ export default function SettingsPage() {
         <div className="p-6 space-y-6">
           {/* Site Name */}
           <div>
-            <label className="block text-sm font-medium text-neutral-300 mb-2">
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
               Site Name
             </label>
             <input
@@ -176,16 +176,16 @@ export default function SettingsPage() {
                 ? editedSettings.site_name 
                 : JSON.parse(editedSettings.site_name || '""')}
               onChange={(e) => updateSetting('site_name', JSON.stringify(e.target.value))}
-              className="w-full px-4 py-2.5 bg-neutral-800 border border-neutral-700 rounded-lg text-white focus:outline-none focus:border-emerald-500"
+              className="w-full px-4 py-2.5 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-neutral-900 dark:text-white focus:outline-none focus:border-emerald-500"
             />
-            <p className="text-xs text-neutral-500 mt-1">
+            <p className="text-xs text-neutral-500 dark:text-neutral-500 mt-1">
               Displayed in the header and browser title
             </p>
           </div>
 
           {/* Site Description */}
           <div>
-            <label className="block text-sm font-medium text-neutral-300 mb-2">
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
               Site Description
             </label>
             <textarea
@@ -194,13 +194,13 @@ export default function SettingsPage() {
                 : JSON.parse(editedSettings.site_description || '""')}
               onChange={(e) => updateSetting('site_description', JSON.stringify(e.target.value))}
               rows={2}
-              className="w-full px-4 py-2.5 bg-neutral-800 border border-neutral-700 rounded-lg text-white focus:outline-none focus:border-emerald-500 resize-none"
+              className="w-full px-4 py-2.5 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-neutral-900 dark:text-white focus:outline-none focus:border-emerald-500 resize-none"
             />
           </div>
 
           {/* Default Currency */}
           <div>
-            <label className="block text-sm font-medium text-neutral-300 mb-2">
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
               Default Currency
             </label>
             <select
@@ -208,7 +208,7 @@ export default function SettingsPage() {
                 ? editedSettings.default_currency
                 : JSON.parse(editedSettings.default_currency || '"NGN"')}
               onChange={(e) => updateSetting('default_currency', JSON.stringify(e.target.value))}
-              className="w-48 px-4 py-2.5 bg-neutral-800 border border-neutral-700 rounded-lg text-white focus:outline-none focus:border-emerald-500"
+              className="w-48 px-4 py-2.5 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-neutral-900 dark:text-white focus:outline-none focus:border-emerald-500"
             >
               <option value="NGN">🇳🇬 NGN - Nigerian Naira</option>
               <option value="USD">🇺🇸 USD - US Dollar</option>
@@ -220,9 +220,9 @@ export default function SettingsPage() {
       </div>
 
       {/* Maintenance Mode */}
-      <div className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden">
-        <div className="p-6 border-b border-neutral-800">
-          <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+      <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl overflow-hidden">
+        <div className="p-6 border-b border-neutral-200 dark:border-neutral-800">
+          <h2 className="text-lg font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
             <Shield className="w-5 h-5 text-amber-500" />
             Maintenance
           </h2>
@@ -231,8 +231,8 @@ export default function SettingsPage() {
         <div className="p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-white">Maintenance Mode</p>
-              <p className="text-xs text-neutral-400 mt-1">
+              <p className="text-sm font-medium text-neutral-900 dark:text-white">Maintenance Mode</p>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
                 When enabled, users will see a maintenance page instead of the app
               </p>
             </div>
@@ -244,7 +244,7 @@ export default function SettingsPage() {
               className={`relative w-14 h-7 rounded-full transition-colors ${
                 editedSettings.maintenance_mode === 'true' || editedSettings.maintenance_mode === true
                   ? 'bg-amber-500' 
-                  : 'bg-neutral-700'
+                  : 'bg-neutral-200 dark:bg-neutral-700'
               }`}
             >
               <span
@@ -258,14 +258,14 @@ export default function SettingsPage() {
           </div>
 
           {(editedSettings.maintenance_mode === 'true' || editedSettings.maintenance_mode === true) && (
-            <div className="mt-4 p-4 bg-amber-500/10 border border-amber-500/20 rounded-lg">
-              <div className="flex items-center gap-2 text-amber-200">
+            <div className="mt-4 p-4 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-lg">
+              <div className="flex items-center gap-2 text-amber-600 dark:text-amber-200">
                 <AlertTriangle className="w-5 h-5" />
                 <p className="text-sm font-medium">
                   Warning: Maintenance mode is enabled
                 </p>
               </div>
-              <p className="text-xs text-amber-200/70 mt-1">
+              <p className="text-xs text-amber-600/70 dark:text-amber-200/70 mt-1">
                 Users will not be able to access the app while this is enabled.
               </p>
             </div>
@@ -274,9 +274,9 @@ export default function SettingsPage() {
       </div>
 
       {/* Database Info */}
-      <div className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden">
-        <div className="p-6 border-b border-neutral-800">
-          <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+      <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl overflow-hidden">
+        <div className="p-6 border-b border-neutral-200 dark:border-neutral-800">
+          <h2 className="text-lg font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
             <Database className="w-5 h-5 text-purple-500" />
             Database
           </h2>
@@ -284,48 +284,49 @@ export default function SettingsPage() {
 
         <div className="p-6">
           <div className="grid grid-cols-2 gap-4">
-            <div className="bg-neutral-800 rounded-lg p-4">
-              <p className="text-xs text-neutral-400 uppercase tracking-wide">Provider</p>
-              <p className="text-lg font-semibold text-white mt-1">Supabase</p>
+            <div className="bg-neutral-50 dark:bg-neutral-800 rounded-lg p-4 border border-neutral-200 dark:border-neutral-700">
+              <p className="text-xs text-neutral-500 dark:text-neutral-400 uppercase tracking-wide">Provider</p>
+              <p className="text-lg font-semibold text-neutral-900 dark:text-white mt-1">Supabase</p>
             </div>
-            <div className="bg-neutral-800 rounded-lg p-4">
-              <p className="text-xs text-neutral-400 uppercase tracking-wide">Region</p>
-              <p className="text-lg font-semibold text-white mt-1">eu-west-3 (Paris)</p>
+            <div className="bg-neutral-50 dark:bg-neutral-800 rounded-lg p-4 border border-neutral-200 dark:border-neutral-700">
+              <p className="text-xs text-neutral-500 dark:text-neutral-400 uppercase tracking-wide">Region</p>
+              <p className="text-lg font-semibold text-neutral-900 dark:text-white mt-1">eu-west-3 (Paris)</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* Danger Zone */}
-      <div className="bg-neutral-900 border border-red-500/30 rounded-xl overflow-hidden">
-        <div className="p-6 border-b border-red-500/30">
-          <h2 className="text-lg font-semibold text-red-400 flex items-center gap-2">
+      <div className="bg-white dark:bg-neutral-900 border border-red-200 dark:border-red-500/30 rounded-xl overflow-hidden">
+
+        <div className="p-6 border-b border-red-200 dark:border-red-500/30">
+          <h2 className="text-lg font-semibold text-red-600 dark:text-red-400 flex items-center gap-2">
             <AlertTriangle className="w-5 h-5" />
             Danger Zone
           </h2>
         </div>
 
         <div className="p-6 space-y-4">
-          <div className="flex items-center justify-between p-4 bg-red-500/5 rounded-lg">
+          <div className="flex items-center justify-between p-4 bg-red-50 dark:bg-red-500/5 rounded-lg border border-red-100 dark:border-transparent">
             <div>
-              <p className="text-sm font-medium text-white">Clear All Scraper Data</p>
-              <p className="text-xs text-neutral-400 mt-1">
+              <p className="text-sm font-medium text-neutral-900 dark:text-white">Clear All Scraper Data</p>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
                 Remove all scraped odds history. This cannot be undone.
               </p>
             </div>
-            <button className="px-4 py-2 bg-red-500/10 text-red-400 border border-red-500/30 rounded-lg hover:bg-red-500/20 transition-colors text-sm">
+            <button className="px-4 py-2 bg-red-100 dark:bg-red-500/10 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-500/30 rounded-lg hover:bg-red-200 dark:hover:bg-red-500/20 transition-colors text-sm">
               Clear Data
             </button>
           </div>
 
-          <div className="flex items-center justify-between p-4 bg-red-500/5 rounded-lg">
+          <div className="flex items-center justify-between p-4 bg-red-50 dark:bg-red-500/5 rounded-lg border border-red-100 dark:border-transparent">
             <div>
-              <p className="text-sm font-medium text-white">Reset All Proxies</p>
-              <p className="text-xs text-neutral-400 mt-1">
+              <p className="text-sm font-medium text-neutral-900 dark:text-white">Reset All Proxies</p>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
                 Reset all proxy statuses and clear ban history.
               </p>
             </div>
-            <button className="px-4 py-2 bg-red-500/10 text-red-400 border border-red-500/30 rounded-lg hover:bg-red-500/20 transition-colors text-sm">
+            <button className="px-4 py-2 bg-red-100 dark:bg-red-500/10 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-500/30 rounded-lg hover:bg-red-200 dark:hover:bg-red-500/20 transition-colors text-sm">
               Reset Proxies
             </button>
           </div>

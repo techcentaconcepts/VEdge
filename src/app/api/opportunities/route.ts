@@ -18,17 +18,14 @@ export async function GET(request: Request) {
     let query = supabase
       .from('value_opportunities')
       .select('*')
-      .eq('status', 'active')
-      .gte('edge_percent', minEdge)
+      .gte('best_edge_percent', minEdge)
       .gt('kickoff_time', new Date().toISOString())
-      .order('edge_percent', { ascending: false })
+      .eq('is_alerted', false)
+      .order('best_edge_percent', { ascending: false })
       .limit(limit);
 
-    if (sport) {
-      query = query.eq('sport', sport);
-    }
     if (bookmaker) {
-      query = query.eq('soft_bookmaker', bookmaker);
+      query = query.eq('soft_bookie', bookmaker);
     }
 
     const { data: opportunities, error } = await query;
@@ -69,11 +66,33 @@ export async function GET(request: Request) {
 function filterByTier(opportunities: any[], tier: string): any[] {
   const now = Date.now();
   
+  // Transform data to match the frontend interface
+  const transformed = opportunities.map(opp => ({
+    id: opp.match_id,
+    match_name: opp.match_name,
+    sport: 'football', // Default to football for now
+    league: opp.league_name || 'Unknown League',
+    kickoff_time: opp.kickoff_time,
+    market: opp.best_edge_market || 'Unknown',
+    selection: opp.best_edge_market === 'home' ? 'Home Win' : 
+               opp.best_edge_market === 'draw' ? 'Draw' : 
+               opp.best_edge_market === 'away' ? 'Away Win' : 'Unknown',
+    sharp_bookmaker: opp.sharp_bookie || 'Pinnacle',
+    sharp_odds: getSharpOddsForMarket(opp, opp.best_edge_market),
+    soft_bookmaker: opp.soft_bookie || 'Unknown',
+    soft_odds: getSoftOddsForMarket(opp, opp.best_edge_market),
+    edge_percent: opp.best_edge_percent || 0,
+    kelly_fraction: calculateKelly(opp.best_edge_percent, getSoftOddsForMarket(opp, opp.best_edge_market)),
+    status: 'active',
+    detected_at: opp.created_at,
+    bet_link: `https://www.bet9ja.com`, // Placeholder
+  }));
+  
   switch (tier) {
     case 'free':
       // Free tier: Only show top 3 opportunities, delayed by 5 minutes
       const fiveMinutesAgo = new Date(now - 5 * 60 * 1000).toISOString();
-      return opportunities
+      return transformed
         .filter(opp => opp.detected_at <= fiveMinutesAgo)
         .slice(0, 3)
         .map(opp => ({
@@ -87,15 +106,40 @@ function filterByTier(opportunities: any[], tier: string): any[] {
     case 'starter':
       // Starter tier: All opportunities, delayed by 2 minutes
       const twoMinutesAgo = new Date(now - 2 * 60 * 1000).toISOString();
-      return opportunities
+      return transformed
         .filter(opp => opp.detected_at <= twoMinutesAgo)
         .slice(0, 10);
     
     case 'pro':
       // Pro tier: Real-time, unlimited opportunities
-      return opportunities;
+      return transformed;
     
     default:
-      return opportunities.slice(0, 3);
+      return transformed.slice(0, 3);
   }
+}
+
+// Helper functions
+function getSharpOddsForMarket(opp: any, market: string): number | null {
+  if (market === 'home') return opp.sharp_odds_home;
+  if (market === 'draw') return opp.sharp_odds_draw;
+  if (market === 'away') return opp.sharp_odds_away;
+  return null;
+}
+
+function getSoftOddsForMarket(opp: any, market: string): number {
+  if (market === 'home') return opp.soft_odds_home || 1.0;
+  if (market === 'draw') return opp.soft_odds_draw || 1.0;
+  if (market === 'away') return opp.soft_odds_away || 1.0;
+  return 1.0;
+}
+
+function calculateKelly(edgePercent: number, odds: number): number | null {
+  if (!edgePercent || !odds) return null;
+  const edge = edgePercent / 100;
+  const p = 1 / odds + edge; // Implied true probability
+  const q = 1 - p;
+  const b = odds - 1;
+  const kelly = (p * b - q) / b;
+  return kelly > 0 ? kelly * 0.25 : 0; // Quarter Kelly for safety
 }

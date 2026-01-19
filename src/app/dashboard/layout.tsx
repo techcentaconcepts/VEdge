@@ -31,12 +31,12 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen bg-neutral-950">
+    <div className="min-h-screen bg-brand-50 dark:bg-gray-950">
       <DashboardNav user={user} profile={profile} />
       <div className="flex">
         <DashboardSidebar />
         <main className="flex-1 lg:pl-64">
-          <div className="p-4 lg:p-8 pt-20 lg:pt-24">
+          <div className="p-4 lg:p-8 pt-20 lg:pt-24 max-w-[1920px] mx-auto">
             {children}
           </div>
         </main>
