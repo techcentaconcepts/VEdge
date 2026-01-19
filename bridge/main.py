@@ -209,9 +209,7 @@ async def get_betking_odds(league: str):
                 detail=f"Unsupported league. Use one of: {list(LEAGUE_MAP.keys())}"
             )
         
-        league_id = getattr(Betid, league_key, None)
-        if not league_id:
-         ogger.info(f"🟠 Scraping BetKing (Cloudflare bypass): {league}")
+        logger.info(f"🟠 Scraping BetKing (Cloudflare bypass): {league}")
         
         # Initialize scraper
         scraper = BetKing()
@@ -219,7 +217,9 @@ async def get_betking_odds(league: str):
             league_id = getattr(Betid, league_key, league_key)
             data = scraper.get_league(league_id)
         else:
-            data = scraper.get_league(league_key: {len(data) if isinstance(data, list) else 'unknown'} items")
+            data = scraper.get_league(league_key)
+        
+        logger.info(f"✅ BetKing scrape complete: {len(data) if isinstance(data, list) else 'unknown'} items")
         
         return normalize_odds_data(data, "betking", league)
         
@@ -253,10 +253,7 @@ async def get_sportybet_odds(league: str):
                 detail=f"Unsupported league. Use one of: {list(LEAGUE_MAP.keys())}"
             )
         
-        league_id = getattr(Betid, league_key, None)
-        if not league_id:
-            raise HTTPException(
-         ogger.info(f"🔵 Scraping SportyBet: {league}")
+        logger.info(f"🔵 Scraping SportyBet: {league}")
         
         # Initialize scraper
         scraper = SportyBet()
@@ -264,7 +261,10 @@ async def get_sportybet_odds(league: str):
             league_id = getattr(Betid, league_key, league_key)
             data = scraper.get_league(league_id)
         else:
-            data = scraper.get_league(league_key
+            data = scraper.get_league(league_key)
+        
+        logger.info(f"✅ SportyBet scrape complete: {len(data) if isinstance(data, list) else 'unknown'} items")
+        
         return normalize_odds_data(data, "sportybet", league)
         
     except Exception as e:
