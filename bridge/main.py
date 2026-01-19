@@ -16,8 +16,14 @@ logger = logging.getLogger(__name__)
 
 # Import NaijaBet-Api
 try:
-    from NaijaBet_Api.bookmakers import Bet9ja, BetkingPlaywright, SportybetPlaywright
-    from NaijaBet_Api.id import Betid
+    # Version 0.2.17 uses different import structure
+    from NaijaBet_Api import Bet9ja, BetKing, SportyBet
+    # Try importing Betid for league constants
+    try:
+        from NaijaBet_Api.id import Betid
+    except:
+        # Fallback if Betid doesn't exist in this version
+        Betid = None
     NAIJABET_AVAILABLE = True
     logger.info("✅ NaijaBet-Api loaded successfully")
 except ImportError as e:
@@ -157,19 +163,17 @@ async def get_bet9ja_odds(league: str):
                 detail=f"Unsupported league. Use one of: {list(LEAGUE_MAP.keys())}"
             )
         
-        # Get Betid constant
-        league_id = getattr(Betid, league_key, None)
-        if not league_id:
-            raise HTTPException(
-                status_code=400,
-                detail=f"League ID not found: {league_key}"
-            )
-        
         logger.info(f"🟢 Scraping Bet9ja: {league}")
         
         # Initialize scraper and fetch data
+        # Use league name directly if Betid not available
         scraper = Bet9ja()
-        data = scraper.get_league(league_id)
+        if Betid:
+            league_id = getattr(Betid, league_key, league_key)
+            data = scraper.get_league(league_id)
+        else:
+            # Fallback: try using league key directly
+            data = scraper.get_league(league_key)
         
         logger.info(f"✅ Bet9ja scrape complete: {len(data) if isinstance(data, list) else 'unknown'} items")
         
@@ -207,18 +211,15 @@ async def get_betking_odds(league: str):
         
         league_id = getattr(Betid, league_key, None)
         if not league_id:
-            raise HTTPException(
-                status_code=400,
-                detail=f"League ID not found: {league_key}"
-            )
+         ogger.info(f"🟠 Scraping BetKing (Cloudflare bypass): {league}")
         
-        logger.info(f"🟠 Scraping BetKing (Cloudflare bypass): {league}")
-        
-        # Use context manager for Playwright scraper
-        with BetkingPlaywright() as scraper:
+        # Initialize scraper
+        scraper = BetKing()
+        if Betid:
+            league_id = getattr(Betid, league_key, league_key)
             data = scraper.get_league(league_id)
-        
-        logger.info(f"✅ BetKing scrape complete: {len(data) if isinstance(data, list) else 'unknown'} items")
+        else:
+            data = scraper.get_league(league_key: {len(data) if isinstance(data, list) else 'unknown'} items")
         
         return normalize_odds_data(data, "betking", league)
         
@@ -255,18 +256,15 @@ async def get_sportybet_odds(league: str):
         league_id = getattr(Betid, league_key, None)
         if not league_id:
             raise HTTPException(
-                status_code=400,
-                detail=f"League ID not found: {league_key}"
-            )
+         ogger.info(f"🔵 Scraping SportyBet: {league}")
         
-        logger.info(f"🔵 Scraping SportyBet: {league}")
-        
-        # Use context manager for Playwright scraper
-        with SportybetPlaywright() as scraper:
+        # Initialize scraper
+        scraper = SportyBet()
+        if Betid:
+            league_id = getattr(Betid, league_key, league_key)
             data = scraper.get_league(league_id)
-        
-        logger.info(f"✅ SportyBet scrape complete: {len(data) if isinstance(data, list) else 'unknown'} items")
-        
+        else:
+            data = scraper.get_league(league_key
         return normalize_odds_data(data, "sportybet", league)
         
     except Exception as e:
