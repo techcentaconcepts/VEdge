@@ -12,6 +12,8 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
+    "test:scrapers": "ts-node --project tsconfig.node.json src/lib/scrapers/test-scrapers.ts",
+    "test:quick": "ts-node --project tsconfig.node.json src/lib/scrapers/quick-test.ts",
     "db:generate": "supabase gen types typescript --project-id $SUPABASE_PROJECT_ID > src/lib/database.types.ts",
     "db:push": "supabase db push",
     "db:reset": "supabase db reset"
@@ -36,7 +38,7 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
-    "@types/node": "^20.11.0",
+    "@types/node": "^20.19.30",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
     "@vitejs/plugin-react": "^4.2.1",
@@ -46,6 +48,7 @@
     "postcss": "^8.4.33",
     "supabase": "^1.136.0",
     "tailwindcss": "^3.4.1",
+    "ts-node": "^10.9.2",
     "typescript": "^5.3.3",
     "vitest": "^1.2.0"
   }

@@ -393,9 +393,82 @@ export class SportyBetPuppeteerScraper {
     return matches;
   }
 
-  async scrapeOdds(matchId: string, markets: string[]): Promise<OddsData[]> {
-    // Similar implementation to Bet9ja
-    return [];
+  async scrapeOdds(matchId: string, markets: string[] = ['1X2', 'Over/Under 2.5']): Promise<OddsData[]> {
+    await this.init();
+    const page = await this.browser!.newPage();
+    const oddsData: OddsData[] = [];
+
+    try {
+      await page.setViewport({ width: 1920, height: 1080 });
+      await page.setUserAgent(
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+      );
+      
+      await page.goto(this.baseUrl, { waitUntil: 'networkidle2' });
+
+      const scrapedOdds = await page.evaluate((markets) => {
+        const results: any[] = [];
+        const marketElements = document.querySelectorAll(
+          '[class*="market"], [class*="outcome"], .odds-row'
+        );
+
+        marketElements.forEach((marketEl) => {
+          const marketName = marketEl.querySelector('[class*="market-name"], [class*="market-title"]')?.textContent?.trim();
+          
+          if (!marketName) return;
+
+          const isRelevantMarket = markets.some(m => 
+            marketName.toLowerCase().includes(m.toLowerCase())
+          );
+
+          if (isRelevantMarket) {
+            const oddsButtons = marketEl.querySelectorAll('[class*="odd"], [class*="selection"], button[class*="bet"]');
+            
+            oddsButtons.forEach((button) => {
+              const selection = button.querySelector('[class*="outcome"], [class*="selection-name"]')?.textContent?.trim();
+              const oddsText = button.querySelector('[class*="odd-value"], [class*="price"]')?.textContent?.trim();
+              const odds = parseFloat(oddsText || '0');
+
+              if (selection && odds > 0) {
+                results.push({
+                  market: marketName,
+                  selection,
+                  odds,
+                });
+              }
+            });
+          }
+        });
+
+        return results;
+      }, markets);
+
+      const [homeTeam, awayTeam, date] = matchId.split('_vs_');
+      const matchName = `${homeTeam?.replace(/_/g, ' ')} vs ${awayTeam?.replace(/_/g, ' ')}`;
+      
+      scrapedOdds.forEach((o: any) => {
+        oddsData.push({
+          matchId,
+          matchName,
+          sport: 'football',
+          league: 'Unknown',
+          kickoffTime: new Date().toISOString(),
+          bookmaker: this.bookmaker,
+          market: o.market,
+          selection: o.selection,
+          odds: o.odds,
+          isSharp: false,
+          scrapedAt: new Date().toISOString(),
+        });
+      });
+
+    } catch (error) {
+      console.error('Error scraping SportyBet odds:', error);
+    } finally {
+      await page.close();
+    }
+
+    return oddsData;
   }
 }
 
@@ -430,11 +503,229 @@ export class BetKingPuppeteerScraper {
   }
 
   async scrapeMatches(sport: string = 'football'): Promise<Match[]> {
-    // Similar implementation
-    return [];
+    await this.init();
+    const page = await this.browser!.newPage();
+    const matches: Match[] = [];
+
+    try {
+      await page.setViewport({ width: 1920, height: 1080 });
+      await page.setUserAgent(
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+      );
+      
+      const sportUrl = `${this.baseUrl}/sports/${sport}`;
+      await page.goto(sportUrl, { 
+        waitUntil: 'networkidle2',
+        timeout: 30000 
+      });
+
+      await page.waitForSelector('[class*="event"], [class*="match"], .game-row', {
+        timeout: 10000,
+      }).catch(() => console.log('No events found on BetKing'));
+
+      const scrapedMatches = await page.evaluate(() => {
+        const matchElements = document.querySelectorAll(
+          '[class*="event"], [class*="match-row"], [class*="game"], [data-match-id]'
+        );
+        
+        const results: any[] = [];
+
+        matchElements.forEach((element) => {
+          try {
+            const homeTeam = 
+              element.querySelector('[class*="home-team"], [class*="team-home"]')?.textContent?.trim() ||
+              element.querySelector('.teams > span:first-child')?.textContent?.trim() ||
+              '';
+            
+            const awayTeam = 
+              element.querySelector('[class*="away-team"], [class*="team-away"]')?.textContent?.trim() ||
+              element.querySelector('.teams > span:last-child')?.textContent?.trim() ||
+              '';
+
+            const league = 
+              element.querySelector('[class*="league"], [class*="competition"]')?.textContent?.trim() ||
+              element.closest('[class*="league"]')?.querySelector('[class*="name"]')?.textContent?.trim() ||
+              'Unknown League';
+
+            const kickoffText = 
+              element.querySelector('[class*="time"], [class*="date"]')?.textContent?.trim() ||
+              '';
+
+            const matchId = 
+              element.getAttribute('data-match-id') ||
+              element.getAttribute('data-event-id') ||
+              element.id ||
+              '';
+
+            if (homeTeam && awayTeam) {
+              results.push({
+                homeTeam,
+                awayTeam,
+                league,
+                kickoffText,
+                matchId: matchId || `${homeTeam}_${awayTeam}`,
+              });
+            }
+          } catch (error) {
+            console.error('Error parsing BetKing match element:', error);
+          }
+        });
+
+        return results;
+      });
+
+      scrapedMatches.forEach((m: any) => {
+        const kickoff = this.parseKickoffTime(m.kickoffText);
+        const id = this.generateMatchId(m.homeTeam, m.awayTeam, kickoff.toISOString());
+
+        matches.push({
+          id,
+          name: `${m.homeTeam} vs ${m.awayTeam}`,
+          sport,
+          league: m.league,
+          homeTeam: m.homeTeam,
+          awayTeam: m.awayTeam,
+          kickoff: kickoff.toISOString(),
+        });
+      });
+
+    } catch (error) {
+      console.error('Error scraping BetKing matches:', error);
+    } finally {
+      await page.close();
+    }
+
+    return matches;
   }
 
-  async scrapeOdds(matchId: string, markets: string[]): Promise<OddsData[]> {
-    return [];
+  async scrapeOdds(matchId: string, markets: string[] = ['1X2', 'Over/Under 2.5']): Promise<OddsData[]> {
+    await this.init();
+    const page = await this.browser!.newPage();
+    const oddsData: OddsData[] = [];
+
+    try {
+      await page.setViewport({ width: 1920, height: 1080 });
+      await page.setUserAgent(
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+      );
+      
+      await page.goto(this.baseUrl, { waitUntil: 'networkidle2' });
+
+      const scrapedOdds = await page.evaluate((markets) => {
+        const results: any[] = [];
+        const marketElements = document.querySelectorAll(
+          '[class*="market"], [class*="betting-option"], .odds-section'
+        );
+
+        marketElements.forEach((marketEl) => {
+          const marketName = marketEl.querySelector('[class*="market-name"], [class*="title"]')?.textContent?.trim();
+          
+          if (!marketName) return;
+
+          const isRelevantMarket = markets.some(m => 
+            marketName.toLowerCase().includes(m.toLowerCase())
+          );
+
+          if (isRelevantMarket) {
+            const oddsButtons = marketEl.querySelectorAll('[class*="odd"], [class*="selection"], button[class*="outcome"]');
+            
+            oddsButtons.forEach((button) => {
+              const selection = button.querySelector('[class*="name"], [class*="outcome"]')?.textContent?.trim();
+              const oddsText = button.querySelector('[class*="value"], [class*="price"]')?.textContent?.trim();
+              const odds = parseFloat(oddsText || '0');
+
+              if (selection && odds > 0) {
+                results.push({
+                  market: marketName,
+                  selection,
+                  odds,
+                });
+              }
+            });
+          }
+        });
+
+        return results;
+      }, markets);
+
+      const [homeTeam, awayTeam, date] = matchId.split('_vs_');
+      const matchName = `${homeTeam?.replace(/_/g, ' ')} vs ${awayTeam?.replace(/_/g, ' ')}`;
+      
+      scrapedOdds.forEach((o: any) => {
+        oddsData.push({
+          matchId,
+          matchName,
+          sport: 'football',
+          league: 'Unknown',
+          kickoffTime: new Date().toISOString(),
+          bookmaker: this.bookmaker,
+          market: o.market,
+          selection: o.selection,
+          odds: o.odds,
+          isSharp: false,
+          scrapedAt: new Date().toISOString(),
+        });
+      });
+
+    } catch (error) {
+      console.error('Error scraping BetKing odds:', error);
+    } finally {
+      await page.close();
+    }
+
+    return oddsData;
+  }
+
+  private parseKickoffTime(timeText: string): Date {
+    const now = new Date();
+    
+    if (timeText.toLowerCase().includes('today')) {
+      const timeMatch = timeText.match(/(\d{1,2}):(\d{2})/);
+      if (timeMatch) {
+        const hours = parseInt(timeMatch[1]);
+        const minutes = parseInt(timeMatch[2]);
+        now.setHours(hours, minutes, 0, 0);
+        return now;
+      }
+    }
+
+    if (timeText.toLowerCase().includes('tomorrow')) {
+      const timeMatch = timeText.match(/(\d{1,2}):(\d{2})/);
+      if (timeMatch) {
+        const hours = parseInt(timeMatch[1]);
+        const minutes = parseInt(timeMatch[2]);
+        const tomorrow = new Date(now);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        tomorrow.setHours(hours, minutes, 0, 0);
+        return tomorrow;
+      }
+    }
+
+    const dateMatch = timeText.match(/(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\s+(\d{1,2}):(\d{2})/);
+    if (dateMatch) {
+      const day = parseInt(dateMatch[1]);
+      const month = parseInt(dateMatch[2]) - 1;
+      const year = dateMatch[3] ? parseInt(dateMatch[3]) : now.getFullYear();
+      const hours = parseInt(dateMatch[4]);
+      const minutes = parseInt(dateMatch[5]);
+      return new Date(year, month, day, hours, minutes, 0, 0);
+    }
+
+    return new Date(now.getTime() + 2 * 60 * 60 * 1000);
+  }
+
+  private normalizeTeamName(name: string): string {
+    return name
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, '_')
+      .replace(/[^a-z0-9_]/g, '');
+  }
+
+  private generateMatchId(homeTeam: string, awayTeam: string, kickoff: string): string {
+    const home = this.normalizeTeamName(homeTeam);
+    const away = this.normalizeTeamName(awayTeam);
+    const date = kickoff.split('T')[0].replace(/-/g, '');
+    return `${home}_vs_${away}_${date}`;
   }
 }
