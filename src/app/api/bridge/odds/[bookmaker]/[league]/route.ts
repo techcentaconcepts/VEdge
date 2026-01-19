@@ -15,10 +15,10 @@ export const maxDuration = 60; // Allow up to 60 seconds for scraping
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { bookmaker: string; league: string } }
+  { params }: { params: Promise<{ bookmaker: string; league: string }> }
 ) {
   try {
-    const { bookmaker, league } = params;
+    const { bookmaker, league } = await params;
 
     // Validate bookmaker
     const validBookmakers = ['bet9ja', 'betking', 'sportybet', 'all'];
