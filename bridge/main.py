@@ -14,38 +14,30 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Import NaijaBet-Api with multiple fallback patterns
+# Import NaijaBet-Api
 NAIJABET_AVAILABLE = False
-Bet9ja = None
-BetKing = None
-SportyBet = None
-Betid = None
 
 try:
-    # Try pattern 1: Direct import
+    # NaijaBet-Api v0.2.x structure
     import NaijaBet_Api
-    logger.info(f"NaijaBet_Api imported, checking available modules: {dir(NaijaBet_Api)}")
-    
-    # Try to find the correct classes
-    if hasattr(NaijaBet_Api, 'Bet9ja'):
-        Bet9ja = NaijaBet_Api.Bet9ja
-        BetKing = getattr(NaijaBet_Api, 'BetKing', None)
-        SportyBet = getattr(NaijaBet_Api, 'SportyBet', None)
-    elif hasattr(NaijaBet_Api, 'bookmakers'):
-        from NaijaBet_Api.bookmakers import *
-        logger.info(f"Bookmakers module available")
+    from NaijaBet_Api.bookmakers import Bet9ja, Betking, Sportybet
     
     # Try importing Betid
     try:
         from NaijaBet_Api.id import Betid
     except:
         try:
-            from NaijaBet_Api import Betid
+            import NaijaBet_Api.id as Betid
         except:
+            Betid = None
             logger.warning("Betid not found, will use league names directly")
     
     NAIJABET_AVAILABLE = True
     logger.info("✅ NaijaBet-Api loaded successfully")
+    logger.info(f"   Bet9ja: {Bet9ja}")
+    logger.info(f"   Betking: {Betking}")
+    logger.info(f"   Sportybet: {Sportybet}")
+    
 except ImportError as e:
     NAIJABET_AVAILABLE = False
     logger.warning(f"⚠️  NaijaBet-Api not available: {e}")
@@ -234,8 +226,8 @@ async def get_betking_odds(league: str):
         
         logger.info(f"🟠 Scraping BetKing (Cloudflare bypass): {league}")
         
-        # Initialize scraper
-        scraper = BetKing()
+        # Initialize scraper (note: Betking not BetKing)
+        scraper = Betking()
         if Betid:
             league_id = getattr(Betid, league_key, league_key)
             data = scraper.get_league(league_id)
@@ -278,8 +270,8 @@ async def get_sportybet_odds(league: str):
         
         logger.info(f"🔵 Scraping SportyBet: {league}")
         
-        # Initialize scraper
-        scraper = SportyBet()
+        # Initialize scraper (note: Sportybet not SportyBet)
+        scraper = Sportybet()
         if Betid:
             league_id = getattr(Betid, league_key, league_key)
             data = scraper.get_league(league_id)
