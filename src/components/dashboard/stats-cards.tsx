@@ -37,11 +37,13 @@ export function StatsCards() {
       if (!user) return;
 
       const { data, error } = await supabase
-        .rpc('calculate_user_stats', { p_user_id: user.id })
-        .single();
+        .rpc('calculate_user_stats', { p_user_id: user.id });
 
       if (error) throw error;
-      setStats(data as UserStats);
+      
+      // The function returns JSON, parse it if it's a string
+      const statsData = typeof data === 'string' ? JSON.parse(data) : data;
+      setStats(statsData as UserStats);
     } catch (error) {
       console.error('Error fetching stats:', error);
     } finally {
