@@ -1,7 +1,7 @@
 fastapi==0.109.0
 uvicorn[standard]==0.27.0
-NaijaBet-Api==0.2.17
-playwright==1.41.0
 python-dotenv==1.0.0
 aiohttp==3.9.1
 pydantic==2.5.3
+beautifulsoup4==4.12.3
+lxml==5.1.0
