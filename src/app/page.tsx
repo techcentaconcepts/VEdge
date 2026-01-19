@@ -1,8 +1,17 @@
 import Link from 'next/link';
 import { ArrowRight, BarChart3, Shield, Zap, TrendingUp } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { createClient } from '@/lib/supabase/server';
 
-export default function HomePage() {
+export default async function HomePage() {
+  // Fetch plans from database
+  const supabase = await createClient();
+  const { data: plans } = await supabase
+    .from('subscription_plans')
+    .select('*')
+    .eq('is_active', true)
+    .order('sort_order', { ascending: true });
+
   return (
     <div className="min-h-screen">
       {/* Navigation */}
@@ -153,92 +162,58 @@ export default function HomePage() {
           </div>
           
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            {[
-              {
-                name: 'Explorer',
-                price: 'Free',
-                description: 'Perfect for tracking your bets',
-                features: [
-                  'Unlimited bet tracking',
-                  'Basic ROI & CLV stats',
-                  'Browser extension sync',
-                  '5-minute delayed odds',
-                ],
-                cta: 'Get Started',
-                popular: false,
-              },
-              {
-                name: 'Starter',
-                price: '$10',
-                priceNgn: '₦15,000',
-                description: 'For serious side-hustlers',
-                features: [
-                  'Everything in Explorer',
-                  'Real-time value alerts',
-                  'Telegram notifications',
-                  'Full analytics dashboard',
-                  '50 alerts/day',
-                ],
-                cta: 'Start 7-Day Trial',
-                popular: true,
-              },
-              {
-                name: 'Pro',
-                price: '$49',
-                priceNgn: '₦75,000',
-                description: 'For career bettors',
-                features: [
-                  'Everything in Starter',
-                  'Stealth Suite access',
-                  '10 dedicated proxy IPs',
-                  'Mug bet scheduler',
-                  'Unlimited alerts',
-                  'Priority support',
-                ],
-                cta: 'Go Pro',
-                popular: false,
-              },
-            ].map((plan, i) => (
-              <div 
-                key={i} 
-                className={`card p-8 bg-white dark:bg-gray-900 ${plan.popular ? 'ring-2 ring-brand-500 scale-105 shadow-xl relative z-10' : ''}`}
-              >
-                {plan.popular && (
-                  <div className="text-center mb-4">
-                    <span className="bg-brand-600 text-white text-xs font-semibold px-3 py-1 rounded-full">
-                      Most Popular
-                    </span>
-                  </div>
-                )}
-                <h3 className="text-xl font-semibold mb-2 text-gray-900 dark:text-white">{plan.name}</h3>
-                <div className="mb-4">
-                  <span className="text-4xl font-bold text-gray-900 dark:text-gray-100">{plan.price}</span>
-                  {plan.price !== 'Free' && <span className="text-gray-500 dark:text-gray-400">/mo</span>}
-                  {plan.priceNgn && (
-                    <div className="text-sm text-gray-500 dark:text-gray-400">{plan.priceNgn}/mo</div>
-                  )}
-                </div>
-                <p className="text-gray-600 dark:text-gray-400 mb-6">
-                  {plan.description}
-                </p>
-                <ul className="space-y-3 mb-8">
-                  {plan.features.map((feature, j) => (
-                    <li key={j} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-                      <svg className="w-5 h-5 text-brand-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-                <Link 
-                  href="/signup" 
-                  className={`w-full ${plan.popular ? 'btn-primary' : 'btn-secondary'} justify-center`}
+            {plans?.map((plan) => {
+              const displayName = plan.name;
+              const monthlyPriceUSD = plan.prices?.USD?.monthly || 0;
+              const monthlyPriceNGN = plan.prices?.NGN?.monthly || 0;
+              const features = Array.isArray(plan.features) ? plan.features : [];
+              
+              return (
+                <div 
+                  key={plan.id} 
+                  className={`card p-8 bg-white dark:bg-gray-900 ${plan.is_popular ? 'ring-2 ring-brand-500 scale-105 shadow-xl relative z-10' : ''}`}
                 >
-                  {plan.cta}
-                </Link>
-              </div>
-            ))}
+                  {plan.is_popular && (
+                    <div className="text-center mb-4">
+                      <span className="bg-brand-600 text-white text-xs font-semibold px-3 py-1 rounded-full">
+                        Most Popular
+                      </span>
+                    </div>
+                  )}
+                  <h3 className="text-xl font-semibold mb-2 text-gray-900 dark:text-white">{displayName}</h3>
+                  <div className="mb-4">
+                    <span className="text-4xl font-bold text-gray-900 dark:text-gray-100">
+                      {monthlyPriceUSD === 0 ? 'Free' : `$${monthlyPriceUSD}`}
+                    </span>
+                    {monthlyPriceUSD > 0 && <span className="text-gray-500 dark:text-gray-400">/mo</span>}
+                    {monthlyPriceNGN > 0 && (
+                      <div className="text-sm text-gray-500 dark:text-gray-400">
+                        ₦{monthlyPriceNGN.toLocaleString()}/mo
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-gray-600 dark:text-gray-400 mb-6">
+                    {plan.description}
+                  </p>
+                  <ul className="space-y-3 mb-8">
+                    {features.map((feature: string, j: number) => (
+                      <li key={j} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                        <svg className="w-5 h-5 text-brand-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
+                  <Link 
+                    href="/signup" 
+                    className={`w-full ${plan.is_popular ? 'btn-primary' : 'btn-secondary'} justify-center`}
+                  >
+                    {plan.slug === 'starter' ? 'Start 7-Day Trial' : plan.slug === 'free' ? 'Get Started' : 'Go Pro'}
+                  </Link>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
