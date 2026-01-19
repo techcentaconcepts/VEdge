@@ -30,22 +30,29 @@ try:
     except:
         logger.warning("Cannot determine NaijaBet-Api version")
     
-    # Try different import patterns
-    try:
-        from NaijaBet_Api.bookmakers import Bet9ja, Betking, Sportybet
-        logger.info("✅ Successfully imported from NaijaBet_Api.bookmakers")
-    except ImportError as e1:
-        logger.warning(f"Pattern 1 failed: {e1}")
-        try:
-            # Try alternative pattern
-            from NaijaBet_Api import Bet9ja, Betking, Sportybet
-            logger.info("✅ Successfully imported from NaijaBet_Api directly")
-        except ImportError as e2:
-            logger.warning(f"Pattern 2 failed: {e2}")
-            # Last resort - import module and inspect
-            import NaijaBet_Api
-            logger.info(f"NaijaBet_Api module contents: {dir(NaijaBet_Api)}")
-            raise ImportError(f"Could not find scraper classes. Module contents: {dir(NaijaBet_Api)}")
+    # Import the module and inspect its structure
+    import NaijaBet_Api
+    logger.info(f"NaijaBet_Api module contents: {dir(NaijaBet_Api)}")
+    
+    # Check bookmakers module
+    import NaijaBet_Api.bookmakers as bookmakers_module
+    logger.info(f"bookmakers module contents: {dir(bookmakers_module)}")
+    
+    # Try to get the actual classes from within the bookmakers submodules
+    if hasattr(bookmakers_module, 'bet9ja'):
+        logger.info("Found bet9ja submodule")
+        from NaijaBet_Api.bookmakers.bet9ja import Bet9ja
+        logger.info(f"✅ Bet9ja imported: {Bet9ja}")
+    
+    if hasattr(bookmakers_module, 'betking'):
+        logger.info("Found betking submodule")
+        from NaijaBet_Api.bookmakers.betking import Betking
+        logger.info(f"✅ Betking imported: {Betking}")
+    
+    if hasattr(bookmakers_module, 'sportybet'):
+        logger.info("Found sportybet submodule")
+        from NaijaBet_Api.bookmakers.sportybet import Sportybet
+        logger.info(f"✅ Sportybet imported: {Sportybet}")
     
     # Try importing Betid
     Betid = None
@@ -57,9 +64,6 @@ try:
     
     NAIJABET_AVAILABLE = True
     logger.info("✅ NaijaBet-Api loaded successfully")
-    logger.info(f"   Bet9ja: {Bet9ja}")
-    logger.info(f"   Betking: {Betking}")
-    logger.info(f"   Sportybet: {Sportybet}")
     
 except ImportError as e:
     NAIJABET_AVAILABLE = False
