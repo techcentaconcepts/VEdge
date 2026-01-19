@@ -306,13 +306,10 @@ async def scrape_sportybet_json(league: str) -> List[Dict]:
     Scrape SportyBet using their factsCenter API
     The "Career Method" - Direct API Interception
     """
-    import time
-    # FIXED: Updated endpoint from getOddsKey to query (or events)
-    # This is the correct endpoint for fetching matches by sport/league
-    url = "https://www.sportybet.com/api/ng/factsCenter/business/sport/1/featured" 
-    
-    # Alternative endpoint if featured fails:
-    # url = "https://www.sportybet.com/api/ng/factsCenter/events"
+    # This endpoint is specific to Nigeria (hence 'ng' in path)
+    # The 'business' subpath often changes. 
+    # Try the most stable 'config' or 'factsCenter' endpoints
+    url = "https://www.sportybet.com/api/ng/factsCenter/events"
     
     # Match the exact headers from the browser
     headers = {
@@ -334,10 +331,10 @@ async def scrape_sportybet_json(league: str) -> List[Dict]:
     }
     
     params = {
-        "_t": str(int(time.time() * 1000)),
-        # Add basic params usually required for featured/events
         "sportId": "sr:sport:1",  # Football
-        "marketId": "1"          # 1X2
+        "marketId": "1,18",        # 1X2 and Double Chance for better catch
+        "upcoming": "true",        # Force upcoming
+        "limit": "50"
     }
     
     try:
@@ -421,7 +418,8 @@ async def scrape_bet9ja_json(league: str) -> List[Dict]:
     Scrape Bet9ja using their mobile JSON API
     """
     # FIXED: Updated endpoint | Old mobile API (301) -> New Desktop API
-    url = "https://sports.bet9ja.com/desktop/feapi/PalazzoRest/GetEvents"
+    # 19/01/26: Updated to use GetUpcomingEvents which is often more stable
+    url = "https://sports.bet9ja.com/desktop/feapi/PalazzoRest/GetUpcomingEvents"
     headers = get_mobile_headers()
     
     # Map league to Bet9ja competition IDs (Approximate - these change)
