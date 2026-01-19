@@ -303,10 +303,10 @@ def sync_to_supabase(match_data: Dict, soft_bookie: str, league: str):
 
 async def scrape_sportybet_json(league: str) -> List[Dict]:
     """
-    Scrape SportyBet using their factsCenter (GET method)
+    Scrape SportyBet using their factsCenter/liveOrPrematchEvents API
     """
-    # Switch to standard GET endpoint which is more reliable
-    url = "https://www.sportybet.com/api/ng/factsCenter/events"
+    # Confirmed working endpoint as of Jan 2026
+    url = "https://www.sportybet.com/api/ng/factsCenter/liveOrPrematchEvents"
     
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -316,84 +316,96 @@ async def scrape_sportybet_json(league: str) -> List[Dict]:
         "platform": "web"
     }
 
-    # Map leagues to SportyBet Tournament IDs
-    # Verified IDs: EPL=17, LaLiga=8, SerieA=23, Bundesliga=35, Ligue1=34
-    tournament_ids = {
-        "premierleague": "sr:tournament:17",
-        "laliga": "sr:tournament:8",
-        "seriea": "sr:tournament:23",
-        "bundesliga": "sr:tournament:35",
-        "ligue1": "sr:tournament:34",
-        "npfl": "sr:tournament:266" # Assuming NPFL ID
-    }
-    
-    tid = tournament_ids.get(league, "sr:tournament:17")
+    # Map leagues to SportyBet Tournament IDs (SportRadar)
+    target_ids = []
+    if league == "premierleague": target_ids = ["sr:tournament:17"]
+    elif league == "laliga": target_ids = ["sr:tournament:8"]
+    elif league == "seriea": target_ids = ["sr:tournament:23"]
+    elif league == "bundesliga": target_ids = ["sr:tournament:35"]
+    elif league == "ligue1": target_ids = ["sr:tournament:34"]
+    elif league == "npfl": target_ids = ["sr:tournament:266"]
     
     params = {
         "sportId": "sr:sport:1",
-        "marketId": "1,18", 
-        "upcoming": "true",
-        "limit": "50",
-        "tournamentId": tid
     }
 
     try:
         async with httpx.AsyncClient(http2=True, timeout=30.0) as client:
             response = await client.get(url, headers=headers, params=params)
-            
-            # If 404, try 'eventsByTournamentId' as fallback
-            if response.status_code == 404:
-                logger.warning("SportyBet /events returned 404, trying /eventsByTournamentId")
-                params.pop("limit", None)
-                url_fallback = "https://www.sportybet.com/api/ng/factsCenter/eventsByTournamentId"
-                response = await client.get(url_fallback, headers=headers, params=params)
-            
             response.raise_for_status()
             
-            data = response.json()
+            json_resp = response.json()
+            # Standard SportyBet response wrapper: { bizCode: 10000, data: [...] }
+            data = json_resp.get("data", [])
+            
             matches = []
             
-            # API response is list of events
+            # Data is list of tournaments
             if isinstance(data, list):
-                events_source = data
-                logger.info(f"✅ Found {len(events_source)} SportyBet matches")
+                logger.info(f"✅ SportyBet: Received {len(data)} tournaments/groups")
                 
-                for event in events_source:
-                    try:
-                        match = {
-                            "id": event.get("id", event.get("eventId", "")),
-                            "home_team": event.get("homeTeamName", event.get("home", {}).get("name", "")),
-                            "away_team": event.get("awayTeamName", event.get("away", {}).get("name", "")),
-                            "kickoff": event.get("scheduledTime", event.get("startTime", "")),
-                            "odds": {}
-                        }
-                        
-                        markets = event.get("markets", [])
-                        for market in markets:
-                            if market.get("id") == "1" or market.get("marketId") == "1":
-                                outcomes = market.get("outcomes", [])
-                                for outcome in outcomes:
-                                    # Odds are strings like "2.55"
-                                    try:
-                                        val = float(outcome.get("odds", 0))
-                                    except:
-                                        val = 0
-                                        
-                                    desc = outcome.get("desc", outcome.get("id", "")).lower()
-                                    if desc == "1" or desc == "home":
-                                        match["odds"]["home"] = val
-                                    elif desc == "x" or desc == "draw":
-                                        match["odds"]["draw"] = val
-                                    elif desc == "2" or desc == "away":
-                                        match["odds"]["away"] = val
-                        
-                        if match["home_team"] and match["odds"].get("home"):
-                            matches.append(match)
-                            sync_to_supabase(match, "SportyBet", league)
-                            
-                    except Exception as e:
+                for tournament in data:
+                    t_id = tournament.get("id", "")
+                    t_name = tournament.get("name", "").lower()
+                    
+                    # Filter by League/Tournament
+                    is_target = False
+                    if t_id in target_ids:
+                        is_target = True
+                    elif league in t_name.replace(" ", ""): # weak fuzzy match
+                        is_target = True
+                    
+                    # If we have specific target IDs, be strict, otherwise loose name match
+                    if target_ids and not is_target:
                         continue
+                    
+                    # If looking for NPFL specifically and no ID match, be careful
+                    
+                    events = tournament.get("events", [])
+                    for event in events:
+                        try:
+                            match = {
+                                "id": event.get("id", event.get("eventId", "")),
+                                "home_team": event.get("homeTeamName", event.get("home", {}).get("name", "")),
+                                "away_team": event.get("awayTeamName", event.get("away", {}).get("name", "")),
+                                "kickoff": event.get("scheduledTime", event.get("startTime", "")),
+                                "odds": {}
+                            }
+                            
+                            markets = event.get("markets", [])
+                            for market in markets:
+                                # Market ID 1 is usually 1X2, but checks desc or name
+                                m_id = str(market.get("id", ""))
+                                m_name = market.get("name", "").lower()
+                                m_desc = market.get("desc", "").lower()
+                                
+                                if m_id == "1" or "1x2" in m_name or "1x2" in m_desc:
+                                    outcomes = market.get("outcomes", [])
+                                    for outcome in outcomes:
+                                        # Odds can be "2.55" string
+                                        try:
+                                            raw = outcome.get("odds", "0")
+                                            val = float(raw)
+                                        except:
+                                            val = 0.0
+                                            
+                                        # Outcome mapping
+                                        o_desc = outcome.get("desc", "").lower()
+                                        if o_desc in ["1", "home"]:
+                                            match["odds"]["home"] = val
+                                        elif o_desc in ["x", "draw"]:
+                                            match["odds"]["draw"] = val
+                                        elif o_desc in ["2", "away"]:
+                                            match["odds"]["away"] = val
+                            
+                            if match["home_team"] and match["odds"].get("home"):
+                                matches.append(match)
+                                sync_to_supabase(match, "SportyBet", league)
+                                
+                        except Exception as e:
+                            continue
 
+            logger.info(f"✅ SportyBet: Found {len(matches)} matches for {league}")
             return matches
             
     except Exception as e:
