@@ -19,10 +19,17 @@ export async function GET(request: Request) {
       .from('value_opportunities')
       .select('*')
       .gte('best_edge_percent', minEdge)
-      .gt('kickoff_time', new Date().toISOString())
       .eq('is_alerted', false)
       .order('best_edge_percent', { ascending: false })
       .limit(limit);
+
+    // Only filter by time if we have a valid time (and include NULLs if needed, but for now let's just be permissive)
+    // Actually, simply OR-ing to include NULLs is tricky with method chaining. 
+    // Let's use the filter string syntax for more complex OR logic 
+    // or just drop the time filter if minEdge is very low (debug mode)
+    if (minEdge > -50) {
+       query = query.gt('kickoff_time', new Date().toISOString());
+    }
 
     if (bookmaker) {
       query = query.eq('soft_bookie', bookmaker);
