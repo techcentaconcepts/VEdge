@@ -16,6 +16,22 @@ import random
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Initialize Supabase client
+try:
+    from supabase import create_client, Client
+    SUPABASE_URL = os.getenv("SUPABASE_URL")
+    SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    
+    if SUPABASE_URL and SUPABASE_KEY:
+        supabase_client: Optional[Client] = create_client(SUPABASE_URL, SUPABASE_KEY)
+        logger.info("✅ Supabase client initialized")
+    else:
+        supabase_client = None
+        logger.warning("⚠️ Supabase credentials not configured")
+except Exception as e:
+    supabase_client = None
+    logger.warning(f"⚠️ Supabase initialization failed: {e}")
+
 # JSON API scraper - The "Career" Method
 SCRAPER_AVAILABLE = True
 logger.info("✅ Using JSON API scraper (Direct Interception)")
