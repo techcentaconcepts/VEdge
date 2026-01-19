@@ -396,14 +396,7 @@ async def get_betking_odds(league: str):
     Returns:
         JSON with matches and odds data
     """
-    if not NAIJABET_AVAILABLE:
-        raise HTTPException(
-            status_code=503,
-            detail="NaijaBet-Api not installed. Run: pip install NaijaBet-Api"
-        )
-    
-    try:
-        leaSCRAPER_AVAILABLE:
+    if not SCRAPER_AVAILABLE:
         raise HTTPException(
             status_code=503,
             detail="Scraper not available"
@@ -422,7 +415,13 @@ async def get_betking_odds(league: str):
         # Use JSON scraper
         data = await scrape_betking_json(league)
         
-        logger.info(f"✅ BetKing scrape complete: {len(data)} matche
+        logger.info(f"✅ BetKing scrape complete: {len(data)} matches")
+        
+        return normalize_odds_data(data, "betking", league)
+        
+    except Exception as e:
+        logger.error(f"❌ BetKing error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"BetKing scraping failed: {str(e)}")
 
 @app.get("/api/odds/sportybet/{league}")
 async def get_sportybet_odds(league: str):
@@ -435,12 +434,7 @@ async def get_sportybet_odds(league: str):
     Returns:
         JSON with matches and odds data
     """
-    if not NAIJABET_AVAILABLE:
-        raise HTTPException(
-            status_code=503,
-            detail="NaijaBet-Api not installed. Run: pip install NaijaBet-Api"
-        )
-    SCRAPER_AVAILABLE:
+    if not SCRAPER_AVAILABLE:
         raise HTTPException(
             status_code=503,
             detail="Scraper not available"
@@ -459,7 +453,12 @@ async def get_sportybet_odds(league: str):
         # Use JSON API scraper
         data = await scrape_sportybet_json(league)
         
-        logger.info(f"✅ SportyBet scrape complete: {len(data)} matche
+        logger.info(f"✅ SportyBet scrape complete: {len(data)} matches")
+        
+        return normalize_odds_data(data, "sportybet", league)
+        
+    except Exception as e:
+        logger.error(f"❌ SportyBet error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"SportyBet scraping failed: {str(e)}")
 
 
@@ -474,20 +473,20 @@ async def get_all_bookmakers(league: str):
     Returns:
         JSON with data from all bookmakers
     """
-    if not NAIJABET_AVAILABLE:
+    if not SCRAPER_AVAILABLE:
         raise HTTPException(
             status_code=503,
-            detail="NaijaBet-Api not installed"
+            detail="Scraper not available"
         )
     
     results = {
         "league": league,
         "timestamp": datetime.now().isoformat(),
         "bookmakers": {}
-    }SCRAPER_AVAILABLE:
-        raise HTTPException(
-            status_code=503,
-            detail="Scraper not available
+    }
+    
+    # Fetch from all bookmakers in parallel
+    for bookie_name, endpoint_func in [
         ("bet9ja", get_bet9ja_odds),
         ("betking", get_betking_odds),
         ("sportybet", get_sportybet_odds)
