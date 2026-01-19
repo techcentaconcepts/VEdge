@@ -307,7 +307,12 @@ async def scrape_sportybet_json(league: str) -> List[Dict]:
     The "Career Method" - Direct API Interception
     """
     import time
-    url = "https://www.sportybet.com/api/ng/factsCenter/flexiblebet/v2/getOddsKey"
+    # FIXED: Updated endpoint from getOddsKey to query (or events)
+    # This is the correct endpoint for fetching matches by sport/league
+    url = "https://www.sportybet.com/api/ng/factsCenter/business/sport/1/featured" 
+    
+    # Alternative endpoint if featured fails:
+    # url = "https://www.sportybet.com/api/ng/factsCenter/events"
     
     # Match the exact headers from the browser
     headers = {
@@ -329,7 +334,10 @@ async def scrape_sportybet_json(league: str) -> List[Dict]:
     }
     
     params = {
-        "_t": str(int(time.time() * 1000))  # Timestamp in milliseconds
+        "_t": str(int(time.time() * 1000)),
+        # Add basic params usually required for featured/events
+        "sportId": "sr:sport:1",  # Football
+        "marketId": "1"          # 1X2
     }
     
     try:
@@ -346,58 +354,60 @@ async def scrape_sportybet_json(league: str) -> List[Dict]:
             # We need to inspect the actual response to parse it correctly
             # For now, log the structure and return empty to avoid errors
             if isinstance(data, dict):
-                # Try common data structures
-                if "data" in data:
-                    logger.info(f"📊 Data keys: {list(data['data'].keys()) if isinstance(data['data'], dict) else 'not a dict'}")
+                # FIXED: Check logic to handle 'data' being a list or dict
+                events_source = data.get("data", [])
+                
+                # If data['data'] is a dict (like in some endpoints), wrap it or look inside
+                if isinstance(events_source, dict):
+                     # Some endpoints return { data: { events: [...] } }
+                    events_source = events_source.get("events", [])
+                
+                if isinstance(events_source, list):
+                    logger.info(f"✅ Found {len(events_source)} items in response")
                     
-                    # Check for matches/events in various possible structures
-                    events_data = data["data"]
-                    if isinstance(events_data, dict):
-                        # Could be events, matches, games, etc.
-                        for key in ["events", "matches", "games", "list"]:
-                            if key in events_data:
-                                events = events_data[key]
-                                logger.info(f"✅ Found {len(events)} items in '{key}'")
+                    for event in events_source[:10]:
+                        try:
+                            # Parse standard SportyBet event structure
+                            match = {
+                                "id": event.get("id", event.get("eventId", "")),
+                                "home_team": event.get("homeTeamName", event.get("home", {}).get("name", "")),
+                                "away_team": event.get("awayTeamName", event.get("away", {}).get("name", "")),
+                                "kickoff": event.get("scheduledTime", event.get("startTime", "")),
+                                "odds": {}
+                            }
+                            
+                            # Extract odds
+                            markets = event.get("markets", [])
+                            for market in markets:
+                                if market.get("id") == "1" or market.get("marketId") == "1" or market.get("name") == "1X2":
+                                    outcomes = market.get("outcomes", [])
+                                    for outcome in outcomes:
+                                        # Odds are often strings or multiplied by 100
+                                        raw_odds = outcome.get("odds", 0)
+                                        try:
+                                            # Handle various formats: "2.10", 210, etc.
+                                            val = float(raw_odds)
+                                            if val > 100: val = val / 100
+                                        except:
+                                            val = 0
+                                            
+                                        # Map outcomes
+                                        desc = outcome.get("desc", outcome.get("id", "")).lower()
+                                        if desc == "1" or desc == "home":
+                                            match["odds"]["home"] = val
+                                        elif desc == "x" or desc == "draw":
+                                            match["odds"]["draw"] = val
+                                        elif desc == "2" or desc == "away":
+                                            match["odds"]["away"] = val
+                            
+                            if match["home_team"] and match["away_team"] and match["odds"].get("home"):
+                                matches.append(match)
+                                sync_to_supabase(match, "SportyBet", league)
                                 
-                                # Parse each event
-                                for event in events[:10]:  # Limit to first 10 for testing
-                                    try:
-                                        match = {
-                                            "id": event.get("eventId", event.get("id", event.get("matchId", ""))),
-                                            "home_team": event.get("homeTeamName", event.get("home", event.get("homeTeam", ""))),
-                                            "away_team": event.get("awayTeamName", event.get("away", event.get("awayTeam", ""))),
-                                            "kickoff": event.get("startTime", event.get("kickoff", event.get("time", ""))),
-                                            "odds": {}
-                                        }
-                                        
-                                        # Try to extract odds
-                                        if "markets" in event:
-                                            for market in event.get("markets", []):
-                                                if market.get("marketId") == 1 or market.get("name", "").lower() in ["1x2", "match winner"]:
-                                                    outcomes = market.get("outcomes", market.get("odds", []))
-                                                    for outcome in outcomes:
-                                                        odds_value = outcome.get("odds", outcome.get("value", 0))
-                                                        if isinstance(odds_value, int) and odds_value > 100:
-                                                            odds_value = odds_value / 10000
-                                                        
-                                                        outcome_id = str(outcome.get("outcomeId", outcome.get("id", "")))
-                                                        if "1" in outcome_id or outcome.get("name", "").lower() == "home":
-                                                            match["odds"]["home"] = odds_value
-                                                        elif "x" in outcome_id.lower() or "draw" in outcome.get("name", "").lower():
-                                                            match["odds"]["draw"] = odds_value
-                                                        elif "2" in outcome_id or outcome.get("name", "").lower() == "away":
-                                                            match["odds"]["away"] = odds_value
-                                        
-                                        if match["home_team"] and match["away_team"]:
-                                            matches.append(match)
-                                            sync_to_supabase(match, "SportyBet", league)
-                                    
-                                    except Exception as parse_error:
-                                        logger.warning(f"Failed to parse event: {parse_error}")
-                                        continue
-                                
-                                break
-            
+                        except Exception as parse_error:
+                            logger.warning(f"Failed to parse event: {parse_error}")
+                            continue
+
             logger.info(f"✅ SportyBet JSON: Found {len(matches)} matches")
             return matches
             
@@ -410,13 +420,28 @@ async def scrape_bet9ja_json(league: str) -> List[Dict]:
     """
     Scrape Bet9ja using their mobile JSON API
     """
-    url = "https://mobile.bet9ja.com/Sport/GetEventsPerCompetition"
+    # FIXED: Updated endpoint | Old mobile API (301) -> New Desktop API
+    url = "https://sports.bet9ja.com/desktop/feapi/PalazzoRest/GetEvents"
     headers = get_mobile_headers()
     
+    # Map league to Bet9ja competition IDs (Approximate - these change)
+    # EPL: 169 (or similar), LaLiga: 181, SerieA: 173
+    comp_ids = {
+        "premierleague": "169",
+        "laliga": "181", 
+        "seriea": "173",
+        "bundesliga": "177",
+        "ligue1": "174", 
+        "npfl": "919" 
+    }
+    
+    comp_id = comp_ids.get(league, "169")  # Default to EPL if unknown
+    
     params = {
-        "sportId": "1",  # Soccer
-        "competitionId": "149",  # Premier League (adjust per league)
-        "marketTypeId": "1"  # 1X2
+        "boot_market_id": "1",  # 1X2 market
+        "competition_id": comp_id,
+        "page_num": "1",
+        "game_ids": ""
     }
     
     try:
@@ -427,19 +452,47 @@ async def scrape_bet9ja_json(league: str) -> List[Dict]:
                 data = response.json()
                 matches = []
                 
-                for event in data.get("events", []):
+                # Bet9ja structure: B.Events
+                events = data.get("B", {}).get("Events", [])
+                
+                for event in events:
                     match = {
-                        "id": event.get("eventId", ""),
-                        "home_team": event.get("home", ""),
-                        "away_team": event.get("away", ""),
-                        "kickoff": event.get("start", ""),
-                        "odds": {
-                            "home": event.get("odds", {}).get("1", 0),
-                            "draw": event.get("odds", {}).get("X", 0),
-                            "away": event.get("odds", {}).get("2", 0)
-                        }
+                        "id": str(event.get("EventId", "")),
+                        "home_team": event.get("HomeTeamName", ""),
+                        "away_team": event.get("AwayTeamName", ""),
+                        "kickoff": event.get("EventDate", ""), # Often in "Date(123123123)" format
+                        "odds": {}
                     }
                     
+                    # Extract 1x2 odds
+                    # Odds are usually in event['Markets'][0]['Outcomes']
+                    markets = event.get("Markets", [])
+                    for market in markets:
+                        if market.get("TemplateId") == 125869: # Standard 1X2 ID (check this)
+                            for outcome in market.get("Outcomes", []):
+                                # Outcome names are usually 1, X, 2
+                                name = outcome.get("OutcomeName", "")
+                                price = outcome.get("Odds", 0)
+                                
+                                if name == "1":
+                                    match["odds"]["home"] = price
+                                elif name == "X":
+                                    match["odds"]["draw"] = price
+                                elif name == "2":
+                                    match["odds"]["away"] = price
+                    
+                    # Fallback check if precise market ID varies
+                    if not match["odds"]:
+                         # Just look for the first market if it has outcomes 1, X, 2
+                         if markets and len(markets) > 0:
+                             outcomes = markets[0].get("Outcomes", [])
+                             for outcome in outcomes:
+                                 name = outcome.get("OutcomeName", "")
+                                 price = outcome.get("Odds", 0)
+                                 if name == "1": match["odds"]["home"] = price
+                                 elif name == "X": match["odds"]["draw"] = price
+                                 elif name == "2": match["odds"]["away"] = price
+
                     if match["home_team"] and match["away_team"]:
                         matches.append(match)
                         sync_to_supabase(match, "Bet9ja", league)
