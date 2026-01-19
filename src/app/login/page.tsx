@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { ThemeToggle } from '@/components/theme-toggle';
 import { TrendingUp, Mail, Lock, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
 
 export default function LoginPage() {
@@ -49,30 +50,35 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-950 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
+      {/* Theme Toggle */}
+      <div className="absolute top-4 right-4">
+        <ThemeToggle />
+      </div>
+      
       {/* Logo */}
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <Link href="/" className="flex items-center justify-center gap-2">
-          <TrendingUp className="h-10 w-10 text-green-500" />
-          <span className="text-3xl font-bold text-white">Vantedge</span>
+          <TrendingUp className="h-10 w-10 text-brand-500" />
+          <span className="text-3xl font-bold text-gray-900 dark:text-white">Vantedge</span>
         </Link>
-        <h2 className="mt-6 text-center text-2xl font-bold text-white">
+        <h2 className="mt-6 text-center text-2xl font-bold text-gray-900 dark:text-white">
           Welcome back
         </h2>
-        <p className="mt-2 text-center text-sm text-neutral-400">
+        <p className="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
           Don&apos;t have an account?{' '}
-          <Link href="/signup" className="text-green-500 hover:text-green-400 font-medium">
+          <Link href="/signup" className="text-brand-600 dark:text-brand-400 hover:text-brand-500 dark:hover:text-brand-300 font-medium transition-colors">
             Sign up for free
           </Link>
         </p>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="card">
+        <div className="card p-6 sm:p-8 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-xl">
           {/* Google Login */}
           <button
             onClick={handleGoogleLogin}
-            className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-neutral-700 rounded-lg text-white hover:bg-neutral-800 transition-colors"
+            className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-700 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors font-medium bg-white dark:bg-gray-800/50"
           >
             <svg className="h-5 w-5" viewBox="0 0 24 24">
               <path
@@ -97,28 +103,28 @@ export default function LoginPage() {
 
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-neutral-800"></div>
+              <div className="w-full border-t border-gray-200 dark:border-gray-800"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-neutral-900 text-neutral-500">or continue with email</span>
+              <span className="px-2 bg-white dark:bg-gray-900 text-gray-500">or continue with email</span>
             </div>
           </div>
 
           {/* Email Login Form */}
           <form onSubmit={handleLogin} className="space-y-4">
             {error && (
-              <div className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm">
+              <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-600 dark:text-red-400 text-sm">
                 <AlertCircle className="h-4 w-4 flex-shrink-0" />
                 {error}
               </div>
             )}
 
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-neutral-300 mb-1.5">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                 Email address
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-500" />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 dark:text-gray-500" />
                 <input
                   id="email"
                   name="email"
@@ -127,18 +133,18 @@ export default function LoginPage() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-neutral-800 border border-neutral-700 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500"
+                  className="input pl-10"
                   placeholder="you@example.com"
                 />
               </div>
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-neutral-300 mb-1.5">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                 Password
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-500" />
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 dark:text-gray-500" />
                 <input
                   id="password"
                   name="password"
@@ -147,7 +153,7 @@ export default function LoginPage() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-neutral-800 border border-neutral-700 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500"
+                  className="input pl-10"
                   placeholder="••••••••"
                 />
               </div>
@@ -159,14 +165,14 @@ export default function LoginPage() {
                   id="remember"
                   name="remember"
                   type="checkbox"
-                  className="h-4 w-4 rounded border-neutral-700 bg-neutral-800 text-green-500 focus:ring-green-500 focus:ring-offset-neutral-900"
+                  className="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-brand-600 focus:ring-brand-500 bg-gray-100 dark:bg-gray-800"
                 />
-                <label htmlFor="remember" className="ml-2 block text-sm text-neutral-400">
+                <label htmlFor="remember" className="ml-2 block text-sm text-gray-600 dark:text-gray-400">
                   Remember me
                 </label>
               </div>
 
-              <Link href="/forgot-password" className="text-sm text-green-500 hover:text-green-400">
+              <Link href="/forgot-password" className="text-sm text-brand-600 dark:text-brand-400 hover:text-brand-500 dark:hover:text-brand-300 font-medium">
                 Forgot password?
               </Link>
             </div>

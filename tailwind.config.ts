@@ -1,4 +1,5 @@
 import type { Config } from 'tailwindcss';
+import colors from 'tailwindcss/colors';
 
 const config: Config = {
   darkMode: 'class',
@@ -10,29 +11,30 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Brand colors
+        gray: colors.zinc,
+        // Brand colors - Modern Neon Green
         brand: {
-          50: '#f0fdf4',
-          100: '#dcfce7',
-          200: '#bbf7d0',
-          300: '#86efac',
-          400: '#4ade80',
-          500: '#22c55e', // Primary green
-          600: '#16a34a',
-          700: '#15803d',
-          800: '#166534',
-          900: '#14532d',
-          950: '#052e16',
+          50: '#ecfdf5',
+          100: '#d1fae5',
+          200: '#a7f3d0',
+          300: '#6ee7b7',
+          400: '#34d399',
+          500: '#10b981', 
+          600: '#059669',
+          700: '#047857',
+          800: '#065f46',
+          900: '#064e3b',
+          950: '#022c22',
         },
         // Accent for alerts/edges
         edge: {
           low: '#fbbf24',    // Yellow for 2-5% edge
           medium: '#f97316', // Orange for 5-10% edge
-          high: '#22c55e',   // Green for 10%+ edge
+          high: '#10b981',   // Green for 10%+ edge
         },
         // Status colors
         status: {
-          won: '#22c55e',
+          won: '#10b981',
           lost: '#ef4444',
           pending: '#f59e0b',
           void: '#6b7280',

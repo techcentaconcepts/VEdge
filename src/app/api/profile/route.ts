@@ -16,7 +16,7 @@ const updateProfileSchema = z.object({
 // GET /api/profile - Get user profile
 export async function GET() {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
@@ -54,7 +54,7 @@ export async function GET() {
 // PATCH /api/profile - Update user profile
 export async function PATCH(request: Request) {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { ThemeToggle } from '@/components/theme-toggle';
 import { TrendingUp, Mail, Lock, User, ArrowRight, Loader2, AlertCircle, Check } from 'lucide-react';
 
 export default function SignupPage() {
@@ -69,30 +70,35 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-950 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
+      {/* Theme Toggle */}
+      <div className="absolute top-4 right-4">
+        <ThemeToggle />
+      </div>
+      
       {/* Logo */}
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <Link href="/" className="flex items-center justify-center gap-2">
-          <TrendingUp className="h-10 w-10 text-green-500" />
-          <span className="text-3xl font-bold text-white">Vantedge</span>
+          <TrendingUp className="h-10 w-10 text-brand-500" />
+          <span className="text-3xl font-bold text-gray-900 dark:text-white">Vantedge</span>
         </Link>
-        <h2 className="mt-6 text-center text-2xl font-bold text-white">
+        <h2 className="mt-6 text-center text-2xl font-bold text-gray-900 dark:text-white">
           Create your account
         </h2>
-        <p className="mt-2 text-center text-sm text-neutral-400">
+        <p className="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
           Already have an account?{' '}
-          <Link href="/login" className="text-green-500 hover:text-green-400 font-medium">
+          <Link href="/login" className="text-brand-600 dark:text-brand-400 hover:text-brand-500 dark:hover:text-brand-300 font-medium transition-colors">
             Sign in
           </Link>
         </p>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="card">
+        <div className="card p-6 sm:p-8 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-xl">
           {/* Google Signup */}
           <button
             onClick={handleGoogleLogin}
-            className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-neutral-700 rounded-lg text-white hover:bg-neutral-800 transition-colors"
+            className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-700 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors font-medium bg-white dark:bg-gray-800/50"
           >
             <svg className="h-5 w-5" viewBox="0 0 24 24">
               <path
@@ -117,48 +123,46 @@ export default function SignupPage() {
 
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-neutral-800"></div>
+              <div className="w-full border-t border-gray-200 dark:border-gray-800"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-neutral-900 text-neutral-500">or continue with email</span>
+              <span className="px-2 bg-white dark:bg-gray-900 text-gray-500">or sign up with email</span>
             </div>
           </div>
 
-          {/* Email Signup Form */}
           <form onSubmit={handleSignup} className="space-y-4">
             {error && (
-              <div className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm">
+              <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-600 dark:text-red-400 text-sm">
                 <AlertCircle className="h-4 w-4 flex-shrink-0" />
                 {error}
               </div>
             )}
 
             <div>
-              <label htmlFor="fullName" className="block text-sm font-medium text-neutral-300 mb-1.5">
-                Full name
+              <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                Full Name
               </label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-500" />
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 dark:text-gray-500" />
                 <input
                   id="fullName"
                   name="fullName"
                   type="text"
-                  autoComplete="name"
                   required
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-neutral-800 border border-neutral-700 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500"
+                  className="input pl-10"
                   placeholder="John Doe"
                 />
               </div>
             </div>
 
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-neutral-300 mb-1.5">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                 Email address
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-500" />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 dark:text-gray-500" />
                 <input
                   id="email"
                   name="email"
@@ -167,18 +171,18 @@ export default function SignupPage() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-neutral-800 border border-neutral-700 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500"
+                  className="input pl-10"
                   placeholder="you@example.com"
                 />
               </div>
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-neutral-300 mb-1.5">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                 Password
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-500" />
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 dark:text-gray-500" />
                 <input
                   id="password"
                   name="password"
@@ -187,69 +191,52 @@ export default function SignupPage() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-neutral-800 border border-neutral-700 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500"
+                  className="input pl-10"
                   placeholder="••••••••"
                 />
               </div>
               
-              {/* Password Requirements */}
-              {password.length > 0 && (
-                <div className="mt-2 space-y-1">
-                  {passwordRequirements.map((req, index) => (
-                    <div key={index} className="flex items-center gap-2 text-xs">
-                      <div className={`h-4 w-4 rounded-full flex items-center justify-center ${
-                        req.met ? 'bg-green-500/20 text-green-500' : 'bg-neutral-800 text-neutral-600'
-                      }`}>
-                        <Check className="h-2.5 w-2.5" />
-                      </div>
-                      <span className={req.met ? 'text-green-500' : 'text-neutral-500'}>
-                        {req.label}
-                      </span>
+              {/* Password strength indicators */}
+              <div className="mt-3 space-y-2">
+                {passwordRequirements.map((req, i) => (
+                  <div key={i} className="flex items-center gap-2 text-xs">
+                    <div className={`w-4 h-4 rounded-full flex items-center justify-center border ${
+                      req.met 
+                        ? 'bg-brand-500 border-brand-500 text-white' 
+                        : 'border-gray-300 dark:border-gray-600'
+                    }`}>
+                      {req.met && <Check className="w-3 h-3" />}
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="flex items-start">
-              <input
-                id="terms"
-                name="terms"
-                type="checkbox"
-                required
-                className="mt-1 h-4 w-4 rounded border-neutral-700 bg-neutral-800 text-green-500 focus:ring-green-500 focus:ring-offset-neutral-900"
-              />
-              <label htmlFor="terms" className="ml-2 block text-sm text-neutral-400">
-                I agree to the{' '}
-                <Link href="/terms" className="text-green-500 hover:text-green-400">
-                  Terms of Service
-                </Link>{' '}
-                and{' '}
-                <Link href="/privacy" className="text-green-500 hover:text-green-400">
-                  Privacy Policy
-                </Link>
-              </label>
+                    <span className={req.met ? 'text-gray-700 dark:text-gray-300' : 'text-gray-500'}>
+                      {req.label}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
 
             <button
               type="submit"
-              disabled={loading}
-              className="btn-primary w-full flex items-center justify-center gap-2"
+              disabled={loading || !allRequirementsMet}
+              className="btn-primary w-full flex items-center justify-center gap-2 mt-6"
             >
               {loading ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
               ) : (
                 <>
-                  Create account
+                  Create Account
                   <ArrowRight className="h-4 w-4" />
                 </>
               )}
             </button>
+            
+            <p className="text-xs text-center text-gray-500 dark:text-gray-400 mt-4">
+              By signing up, you agree to our{' '}
+              <Link href="/terms" className="underline hover:text-gray-900 dark:hover:text-white">Terms of Service</Link>
+              {' '}and{' '}
+              <Link href="/privacy" className="underline hover:text-gray-900 dark:hover:text-white">Privacy Policy</Link>
+            </p>
           </form>
-
-          <p className="mt-4 text-xs text-center text-neutral-500">
-            Start free with 5 alerts/day. No credit card required.
-          </p>
         </div>
       </div>
     </div>

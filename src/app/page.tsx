@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { ArrowRight, BarChart3, Shield, Zap, TrendingUp } from 'lucide-react';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 export default function HomePage() {
   return (
@@ -9,12 +10,13 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center">
+              <div className="w-8 h-8 bg-brand-500 rounded-lg flex items-center justify-center shadow-lg shadow-brand-500/20">
                 <TrendingUp className="w-5 h-5 text-white" />
               </div>
-              <span className="font-bold text-xl">Vantedge</span>
+              <span className="font-bold text-xl tracking-tight text-gray-900 dark:text-white">Vantedge</span>
             </div>
             <div className="hidden md:flex items-center gap-8">
+              <ThemeToggle />
               <Link href="#features" className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
                 Features
               </Link>
@@ -78,7 +80,7 @@ export default function HomePage() {
               { value: '95%', label: 'User Satisfaction' },
             ].map((stat, i) => (
               <div key={i} className="text-center">
-                <div className="text-3xl sm:text-4xl font-bold text-brand-600">{stat.value}</div>
+                <div className="text-3xl sm:text-4xl font-bold text-brand-600 dark:text-brand-400">{stat.value}</div>
                 <div className="text-gray-600 dark:text-gray-400 mt-1">{stat.label}</div>
               </div>
             ))}
@@ -199,7 +201,7 @@ export default function HomePage() {
             ].map((plan, i) => (
               <div 
                 key={i} 
-                className={`card p-8 ${plan.popular ? 'ring-2 ring-brand-500 scale-105' : ''}`}
+                className={`card p-8 bg-white dark:bg-gray-900 ${plan.popular ? 'ring-2 ring-brand-500 scale-105 shadow-xl relative z-10' : ''}`}
               >
                 {plan.popular && (
                   <div className="text-center mb-4">
@@ -208,12 +210,12 @@ export default function HomePage() {
                     </span>
                   </div>
                 )}
-                <h3 className="text-xl font-semibold mb-2">{plan.name}</h3>
+                <h3 className="text-xl font-semibold mb-2 text-gray-900 dark:text-white">{plan.name}</h3>
                 <div className="mb-4">
-                  <span className="text-4xl font-bold">{plan.price}</span>
-                  {plan.price !== 'Free' && <span className="text-gray-500">/mo</span>}
+                  <span className="text-4xl font-bold text-gray-900 dark:text-gray-100">{plan.price}</span>
+                  {plan.price !== 'Free' && <span className="text-gray-500 dark:text-gray-400">/mo</span>}
                   {plan.priceNgn && (
-                    <div className="text-sm text-gray-500">{plan.priceNgn}/mo</div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">{plan.priceNgn}/mo</div>
                   )}
                 </div>
                 <p className="text-gray-600 dark:text-gray-400 mb-6">
@@ -221,8 +223,8 @@ export default function HomePage() {
                 </p>
                 <ul className="space-y-3 mb-8">
                   {plan.features.map((feature, j) => (
-                    <li key={j} className="flex items-center gap-2 text-sm">
-                      <svg className="w-5 h-5 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <li key={j} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                      <svg className="w-5 h-5 text-brand-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                       </svg>
                       {feature}

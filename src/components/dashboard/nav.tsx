@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { User } from '@supabase/supabase-js';
 import { Profile } from '@/lib/database.types';
 import { createClient } from '@/lib/supabase/client';
+import { ThemeToggle } from '@/components/theme-toggle';
 import {
   TrendingUp,
   Bell,
@@ -66,6 +67,9 @@ export function DashboardNav({ user, profile }: DashboardNavProps) {
 
         {/* Right Side */}
         <div className="flex items-center gap-4">
+          {/* Theme Toggle */}
+          <ThemeToggle />
+          
           {/* Tier Badge */}
           <div className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium ${tierColors[tier]}`}>
             {tier === 'pro' && <Crown className="h-3.5 w-3.5" />}

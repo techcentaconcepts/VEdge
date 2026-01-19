@@ -13,7 +13,7 @@ import {
 import Link from 'next/link';
 
 export default async function DashboardPage() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   // Fetch user stats
@@ -87,23 +87,23 @@ export default async function DashboardPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-white">Dashboard</h1>
-        <p className="text-neutral-400 mt-1">Track your betting performance and find value opportunities</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
+        <p className="text-gray-500 dark:text-gray-400 mt-1">Track your betting performance and find value opportunities</p>
       </div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {statCards.map((stat) => (
-          <div key={stat.label} className="card">
+          <div key={stat.label} className="stat-card">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-sm text-neutral-400">{stat.label}</p>
-                <p className="text-2xl font-bold text-white mt-1">{stat.value}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{stat.label}</p>
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{stat.value}</h3>
               </div>
               <div className={`p-2 rounded-lg ${
-                stat.trend === 'up' ? 'bg-green-500/10 text-green-500' :
-                stat.trend === 'down' ? 'bg-red-500/10 text-red-500' :
-                'bg-neutral-800 text-neutral-400'
+                stat.trend === 'up' ? 'bg-brand-500/10 text-brand-600 dark:text-brand-400' : 
+                stat.trend === 'down' ? 'bg-red-500/10 text-red-600 dark:text-red-400' : 
+                'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
               }`}>
                 <stat.icon className="h-5 w-5" />
               </div>

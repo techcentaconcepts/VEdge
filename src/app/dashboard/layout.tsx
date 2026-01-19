@@ -8,7 +8,7 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
@@ -21,6 +21,14 @@ export default async function DashboardLayout({
     .select('*')
     .eq('id', user.id)
     .single();
+
+  // Check if user is admin - redirect them to admin panel
+  const { data: adminCheck } = await supabase
+    .rpc('is_user_admin');
+
+  if (adminCheck && adminCheck.length > 0) {
+    redirect('/admin');
+  }
 
   return (
     <div className="min-h-screen bg-neutral-950">

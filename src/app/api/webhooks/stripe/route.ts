@@ -15,7 +15,8 @@ export async function POST(request: Request) {
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || '';
     
     const body = await request.text();
-    const signature = headers().get('stripe-signature')!;
+    const headersList = await headers();
+    const signature = headersList.get('stripe-signature')!;
 
     let event: Stripe.Event;
 
@@ -26,7 +27,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
     }
 
-    const supabase = createClient();
+    const supabase = await createClient();
 
     switch (event.type) {
       case 'checkout.session.completed': {

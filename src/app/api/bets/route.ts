@@ -29,7 +29,7 @@ const batchSyncSchema = z.object({
 // GET /api/bets - List user's bets
 export async function GET(request: Request) {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
@@ -89,7 +89,7 @@ export async function GET(request: Request) {
 // POST /api/bets - Create a single bet
 export async function POST(request: Request) {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {

@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server';
 // GET /api/opportunities - Get active value opportunities
 export async function GET(request: Request) {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     
     const { searchParams } = new URL(request.url);
     const minEdge = parseFloat(searchParams.get('min_edge') || '2');
