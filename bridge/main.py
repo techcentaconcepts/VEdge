@@ -16,21 +16,44 @@ logger = logging.getLogger(__name__)
 
 # Import NaijaBet-Api
 NAIJABET_AVAILABLE = False
+import_error_details = None
 
 try:
-    # NaijaBet-Api v0.2.x structure
-    import NaijaBet_Api
-    from NaijaBet_Api.bookmakers import Bet9ja, Betking, Sportybet
+    # NaijaBet-Api v0.2.x structure - try multiple import patterns
+    logger.info("Attempting to import NaijaBet-Api...")
+    
+    # First, check what's installed
+    try:
+        import pkg_resources
+        version = pkg_resources.get_distribution("NaijaBet-Api").version
+        logger.info(f"NaijaBet-Api version {version} is installed")
+    except:
+        logger.warning("Cannot determine NaijaBet-Api version")
+    
+    # Try different import patterns
+    try:
+        from NaijaBet_Api.bookmakers import Bet9ja, Betking, Sportybet
+        logger.info("✅ Successfully imported from NaijaBet_Api.bookmakers")
+    except ImportError as e1:
+        logger.warning(f"Pattern 1 failed: {e1}")
+        try:
+            # Try alternative pattern
+            from NaijaBet_Api import Bet9ja, Betking, Sportybet
+            logger.info("✅ Successfully imported from NaijaBet_Api directly")
+        except ImportError as e2:
+            logger.warning(f"Pattern 2 failed: {e2}")
+            # Last resort - import module and inspect
+            import NaijaBet_Api
+            logger.info(f"NaijaBet_Api module contents: {dir(NaijaBet_Api)}")
+            raise ImportError(f"Could not find scraper classes. Module contents: {dir(NaijaBet_Api)}")
     
     # Try importing Betid
+    Betid = None
     try:
         from NaijaBet_Api.id import Betid
+        logger.info("✅ Betid imported successfully")
     except:
-        try:
-            import NaijaBet_Api.id as Betid
-        except:
-            Betid = None
-            logger.warning("Betid not found, will use league names directly")
+        logger.warning("Betid not available, will use league strings directly")
     
     NAIJABET_AVAILABLE = True
     logger.info("✅ NaijaBet-Api loaded successfully")
@@ -40,11 +63,15 @@ try:
     
 except ImportError as e:
     NAIJABET_AVAILABLE = False
-    logger.warning(f"⚠️  NaijaBet-Api not available: {e}")
-    logger.warning("Run: pip install NaijaBet-Api && playwright install")
+    import_error_details = str(e)
+    logger.error(f"❌ NaijaBet-Api import failed: {e}")
+    logger.error("Check Railway build logs for installation errors")
 except Exception as e:
-    logger.error(f"❌ Error loading NaijaBet-Api: {e}")
     NAIJABET_AVAILABLE = False
+    import_error_details = str(e)
+    logger.error(f"❌ Unexpected error loading NaijaBet-Api: {e}")
+    import traceback
+    logger.error(traceback.format_exc())
 
 # Initialize FastAPI
 app = FastAPI(
@@ -101,7 +128,8 @@ async def health_check():
         "status": "healthy",
         "service": "naija-bridge",
         "timestamp": datetime.now().isoformat(),
-        "naijabet_available": NAIJABET_AVAILABLE
+        "naijabet_available": NAIJABET_AVAILABLE,
+        "import_error": import_error_details if not NAIJABET_AVAILABLE else None
     }
 
 
