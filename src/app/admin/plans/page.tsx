@@ -249,13 +249,13 @@ export default function PlansPage() {
 
               {/* Features */}
               <ul className="space-y-2 mb-6">
-                {plan.features.slice(0, 4).map((feature, i) => (
+                {(Array.isArray(plan.features) ? plan.features : []).slice(0, 4).map((feature, i) => (
                   <li key={i} className="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-300">
                     <Check className="w-4 h-4 text-emerald-500 flex-shrink-0" />
                     {feature}
                   </li>
                 ))}
-                {plan.features.length > 4 && (
+                {Array.isArray(plan.features) && plan.features.length > 4 && (
                   <li className="text-sm text-neutral-500">
                     +{plan.features.length - 4} more features
                   </li>

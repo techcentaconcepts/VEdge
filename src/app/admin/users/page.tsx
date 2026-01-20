@@ -15,6 +15,7 @@ import {
   CreditCard,
   AlertTriangle,
   CheckCircle,
+  Settings,
   XCircle,
   RefreshCw,
   Download,
@@ -414,9 +415,9 @@ export default function UsersPage() {
                       setShowGiftModal(true);
                     }}
                     className="p-2 text-neutral-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 rounded-lg transition-colors"
-                    title="Gift subscription"
+                    title="Manage User"
                   >
-                    <Gift className="w-4 h-4" />
+                    <Settings className="w-4 h-4" />
                   </button>
                 </div>
               </div>
@@ -425,37 +426,37 @@ export default function UsersPage() {
         </div>
       </div>
 
-      {/* Gift Modal */}
+      {/* Manage User Modal (Replaces Gift Modal) */}
       {showGiftModal && selectedUser && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl w-full max-w-md shadow-2xl">
             <div className="p-6 border-b border-neutral-200 dark:border-neutral-800">
               <h2 className="text-xl font-bold text-neutral-900 dark:text-white flex items-center gap-2">
-                <Gift className="w-5 h-5 text-emerald-500" />
-                Gift Subscription
+                <Settings className="w-5 h-5 text-emerald-500" />
+                Manage User
               </h2>
               <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
-                Gift a subscription to {selectedUser.email}
+                {selectedUser.full_name} ({selectedUser.email})
               </p>
             </div>
 
-            <div className="p-6 space-y-4">
+            <div className="p-6 space-y-6">
               <div>
                 <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
                   Subscription Tier
                 </label>
-                <div className="flex gap-2">
-                  {['starter', 'pro'].map(tier => (
+                <div className="grid grid-cols-2 gap-2">
+                  {['free', 'starter', 'pro', 'custom_pro'].map((tier) => (
                     <button
                       key={tier}
                       onClick={() => setGiftTier(tier)}
-                      className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      className={`py-2 rounded-lg text-sm font-medium transition-colors ${
                         giftTier === tier
                           ? 'bg-emerald-500 text-white'
                           : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
                       }`}
                     >
-                      {tier.charAt(0).toUpperCase() + tier.slice(1)}
+                      {tier === 'custom_pro' ? 'Custom Pro' : tier.charAt(0).toUpperCase() + tier.slice(1)}
                     </button>
                   ))}
                 </div>
@@ -463,26 +464,12 @@ export default function UsersPage() {
 
               <div>
                 <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                  Duration (months)
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  max="12"
-                  value={giftDuration}
-                  onChange={(e) => setGiftDuration(parseInt(e.target.value) || 1)}
-                  className="w-full px-4 py-2.5 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-neutral-900 dark:text-white focus:outline-none focus:border-emerald-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                  Reason (optional)
+                  Notes / Reason
                 </label>
                 <textarea
                   value={giftReason}
                   onChange={(e) => setGiftReason(e.target.value)}
-                  placeholder="e.g., Influencer partnership, Payment issue resolution..."
+                  placeholder="Reason for change..."
                   rows={2}
                   className="w-full px-4 py-2.5 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-neutral-900 dark:text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-500 resize-none"
                 />
@@ -508,12 +495,12 @@ export default function UsersPage() {
                 {gifting ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
-                    Gifting...
+                    Updating...
                   </>
                 ) : (
                   <>
-                    <Gift className="w-4 h-4" />
-                    Gift {giftDuration} month(s) of {giftTier}
+                    <CheckCircle className="w-4 h-4" />
+                    Save Changes
                   </>
                 )}
               </button>

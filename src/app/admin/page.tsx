@@ -16,6 +16,8 @@ interface Stats {
   activeSubscriptions: number;
   monthlyRevenue: number;
   newUsersToday: number;
+  activeOpportunities: number;
+  maxEdge: number;
 }
 
 export default function AdminDashboard() {
@@ -51,6 +53,21 @@ export default function AdminDashboard() {
           .select('*', { count: 'exact', head: true })
           .gte('created_at', today.toISOString());
 
+        // Get value opportunities stats
+        const now = new Date().toISOString();
+        const { data: opps } = await supabase
+            .from('value_opportunities')
+            .select('best_edge_percent')
+            .gt('kickoff_time', now)
+            .order('best_edge_percent', { ascending: false })
+            .limit(1);
+
+        const { count: activeOpps } = await supabase
+            .from('value_opportunities')
+            .select('*', { count: 'exact', head: true })
+            .gt('kickoff_time', now);
+
+
         // Get recent users
         const { data: recent } = await supabase
           .from('profiles')
@@ -63,6 +80,8 @@ export default function AdminDashboard() {
           activeSubscriptions: activeSubscriptions || 0,
           monthlyRevenue: (activeSubscriptions || 0) * 5000, // Rough estimate
           newUsersToday: newUsersToday || 0,
+          activeOpportunities: activeOpps || 0,
+          maxEdge: opps && opps.length > 0 ? opps[0].best_edge_percent : 0 
         });
         setRecentUsers(recent || []);
       } catch (error) {
@@ -104,6 +123,20 @@ export default function AdminDashboard() {
       change: stats?.newUsersToday ? '+' + stats.newUsersToday : '0',
       positive: (stats?.newUsersToday || 0) > 0,
     },
+    {
+      label: 'Active Opportunities',
+      value: stats?.activeOpportunities || 0,
+      icon: ArrowUpRight,
+      change: 'Live',
+      positive: true,
+    },
+    {
+      label: 'Max Edge Available',
+      value: `${(stats?.maxEdge || 0).toFixed(2)}%`,
+      icon: DollarSign, // Reusing icon for now
+      change: 'Best',
+      positive: (stats?.maxEdge || 0) > 2,
+    },
   ];
 
   if (loading) {
@@ -122,7 +155,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {statCards.map((stat) => (
           <div
             key={stat.label}

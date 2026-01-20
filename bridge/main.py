@@ -586,7 +586,16 @@ async def scrape_betking_json(league: str) -> List[Dict]:
     """
     # For now, using SportyBet template as reference
     logger.warning("BetKing scraper using SportyBet template - needs actual endpoint")
-    return await scrape_sportybet_json(league)
+    
+    # We are calling scrape_sportybet_json but we want to log it as BetKing
+    # Ideally we should write a real endpoint
+    # For now, let's just log a "maintenance" status so it appears in dashboard
+    
+    await log_scraper_health("betking", "degraded", 0, 0, 0, "Using placeholder")
+    
+    # Re-use sportybet logic but results will be logged as Sportybet inside that function
+    # To properly log BetKing, we need real scraping logic
+    return []
 
 
 def normalize_odds_data(raw_data: Any, bookmaker: str, league: str) -> Dict[str, Any]:
