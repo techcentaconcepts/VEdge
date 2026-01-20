@@ -38,7 +38,11 @@ curl http://localhost:8000/api/odds/bet9ja/premierleague
 
 ## Environment Variables
 
-No environment variables required for basic functionality.
+Required for full functionality (scraping and database logging):
+
+- `SUPABASE_URL` - Your Supabase Project URL
+- `SUPABASE_SERVICE_ROLE_KEY` - Your Supabase Service Role Key (for database access)
+- `ODDS_API_KEY` - API Key for The Odds API (optional, defaults to internal key)
 
 Optional:
 - `ALLOWED_ORIGINS` - Comma-separated list of allowed CORS origins
